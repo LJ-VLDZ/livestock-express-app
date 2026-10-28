@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "863176748898",
+    "project_id": "livestock-express-new-2026",
+    "storage_bucket": "livestock-express-new-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:863176748898:android:ffad97536fde38674a863b",
+        "android_client_info": {
+          "package_name": "com.example.livestock_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7oMuFs2LycE4ved6-aWwmDS7cnZHrYTE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
