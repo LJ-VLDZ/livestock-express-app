@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +14,9 @@ class FaceCameraScreen extends StatefulWidget {
 class _FaceCameraScreenState extends State<FaceCameraScreen> with SingleTickerProviderStateMixin {
   late CameraController _controller;
   bool _isProcessing = false;
-  String _statusMessage = "Position your face clearly inside the circle";
+  String _statusMessage = "Position your face inside the circle";
+  Timer? _autoCaptureTimer;
+  int _countdown = 3;
 
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
@@ -35,7 +38,6 @@ class _FaceCameraScreenState extends State<FaceCameraScreen> with SingleTickerPr
   }
 
   Future<void> _initializeCamera() async {
-    // Use front-facing camera if available for selfie/facial capture
     _controller = CameraController(
       widget.camera,
       ResolutionPreset.high,
@@ -43,14 +45,34 @@ class _FaceCameraScreenState extends State<FaceCameraScreen> with SingleTickerPr
     );
     try {
       await _controller.initialize();
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {});
+        _startAutoCaptureCountdown();
+      }
     } catch (e) {
       debugPrint("Camera initialization error: $e");
     }
   }
 
+  void _startAutoCaptureCountdown() {
+    _autoCaptureTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_countdown > 1) {
+        if (mounted) {
+          setState(() {
+            _countdown--;
+            _statusMessage = "Hold steady... capturing in $_countdown s";
+          });
+        }
+      } else {
+        timer.cancel();
+        _captureFace();
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _autoCaptureTimer?.cancel();
     _animController.dispose();
     _controller.dispose();
     super.dispose();
@@ -58,10 +80,11 @@ class _FaceCameraScreenState extends State<FaceCameraScreen> with SingleTickerPr
 
   Future<void> _captureFace() async {
     if (_isProcessing || !_controller.value.isInitialized) return;
+    _autoCaptureTimer?.cancel();
 
     setState(() {
       _isProcessing = true;
-      _statusMessage = "Processing facial capture...";
+      _statusMessage = "Capturing selfie for profile picture...";
     });
 
     try {
@@ -96,9 +119,7 @@ class _FaceCameraScreenState extends State<FaceCameraScreen> with SingleTickerPr
         child: Stack(
           children: [
             Positioned.fill(child: CameraPreview(_controller)),
-            Container(color: Colors.black.withValues(alpha: 0.5)),
-
-            // Top Status Banner
+            Container(color: Colors.black.withValues(alpha: 0.4)),
             Positioned(
               top: 60,
               left: 20,
@@ -124,8 +145,6 @@ class _FaceCameraScreenState extends State<FaceCameraScreen> with SingleTickerPr
                 ),
               ),
             ),
-
-            // Circular Face Guide Frame
             Center(
               child: Container(
                 width: 260,
@@ -136,8 +155,6 @@ class _FaceCameraScreenState extends State<FaceCameraScreen> with SingleTickerPr
                 ),
               ),
             ),
-
-            // Bottom Action Panel
             Positioned(
               bottom: 40,
               left: 20,
@@ -145,8 +162,9 @@ class _FaceCameraScreenState extends State<FaceCameraScreen> with SingleTickerPr
               child: Column(
                 children: [
                   const Text(
-                    "Ensure good lighting and remove sunglasses or hats.",
+                    "Ensure good lighting and face the camera directly.",
                     style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
@@ -167,7 +185,7 @@ class _FaceCameraScreenState extends State<FaceCameraScreen> with SingleTickerPr
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                       )
                           : const Text(
-                        "Capture Selfie",
+                        "Capture Selfie Now",
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                       ),
                     ),

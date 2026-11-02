@@ -16,12 +16,11 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
 
-  // Futuristic Color Suite
   final Color _deepForestGreen = const Color(0xFF062314);
   final Color _vibrantGreen = const Color(0xFF134E27);
   final Color _surfaceBg = const Color(0xFFF1F6F2);
 
-  String _selectedTab = "Active"; // "Active", "Pending", or "Sold"
+  String _selectedTab = "Active"; // "Active", "Pending", "Sold", or "Rejected"
 
   @override
   void initState() {
@@ -205,7 +204,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
               ),
               const SizedBox(height: 18),
 
-              // 3-Way Filter Tabs: Active, Pending, Sold
+              // 4-Way Filter Tabs: Active, Pending, Sold, Rejected
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
@@ -220,6 +219,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
                       _buildTabButton("Active"),
                       _buildTabButton("Pending"),
                       _buildTabButton("Sold"),
+                      _buildTabButton("Rejected"),
                     ],
                   ),
                 ),
@@ -267,22 +267,24 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
                       );
                     }
 
-                    // Strict separation isolating Pending from Sold/Ordered
                     final docs = snapshot.data!.docs.where((doc) {
                       final item = doc.data() as Map<String, dynamic>;
                       final status = (item['status'] ?? 'available').toString().trim().toLowerCase();
                       final isAvailable = item['isAvailable'];
 
-                      bool isPending = status == 'pending' || status == 'unapproved' || status == 'under review';
+                      bool isRejected = status == 'rejected' || status == 'declined';
+                      bool isPending = !isRejected && (status == 'pending' || status == 'unapproved' || status == 'under review');
                       bool isOrdered = status == 'ordered';
-                      bool isSold = status == 'sold' || status == 'completed' || (isAvailable == false && !isPending && !isOrdered);
+                      bool isSold = !isRejected && (status == 'sold' || status == 'completed' || (isAvailable == false && !isPending && !isOrdered));
 
-                      if (_selectedTab == "Pending") {
+                      if (_selectedTab == "Rejected") {
+                        return isRejected;
+                      } else if (_selectedTab == "Pending") {
                         return isPending;
                       } else if (_selectedTab == "Sold") {
                         return isSold || isOrdered;
                       } else {
-                        return !isPending && !isSold && !isOrdered;
+                        return !isRejected && !isPending && !isSold && !isOrdered;
                       }
                     }).toList();
 
@@ -296,7 +298,9 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
                                   ? Icons.check_circle_outline_rounded
                                   : _selectedTab == "Pending"
                                   ? Icons.hourglass_empty_rounded
-                                  : Icons.history_rounded,
+                                  : _selectedTab == "Sold"
+                                  ? Icons.history_rounded
+                                  : Icons.cancel_outlined,
                               size: 48,
                               color: Colors.grey.shade400,
                             ),
@@ -319,6 +323,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
                         final item = doc.data() as Map<String, dynamic>;
 
                         final String status = item['status'] ?? 'Available';
+                        final String? rejectionReason = item['rejectionReason'];
                         final rawPrice = item['price'];
                         final double price = rawPrice is int ? rawPrice.toDouble() : (rawPrice ?? 0.0);
 
@@ -330,7 +335,14 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
                         } else if (status.toLowerCase() == 'pending' || status.toLowerCase() == 'unapproved') {
                           statusColor = Colors.orange.shade800;
                           statusBg = Colors.orange.shade50;
+                        } else if (status.toLowerCase() == 'rejected' || status.toLowerCase() == 'declined') {
+                          statusColor = Colors.red.shade700;
+                          statusBg = Colors.red.shade50;
                         }
+
+                        // Determine whether editing is permitted (disabled for rejected items)
+                        final bool isRejectedStatus = status.toLowerCase() == 'rejected' || status.toLowerCase() == 'declined';
+                        final bool isSoldStatus = status.toLowerCase() == 'sold' || status.toLowerCase() == 'completed' || status.toLowerCase() == 'ordered';
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16),
@@ -403,14 +415,43 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
                                 "Category: ${item['category'] ?? 'Livestock'} • Brgy. ${item['barangay'] ?? 'Alaminos'}",
                                 style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w600),
                               ),
+
+                              // Rejection Reason Banner if rejected
+                              if (isRejectedStatus && rejectionReason != null && rejectionReason.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.shade50,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.red.shade200, width: 1),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Reason for Rejection:",
+                                        style: TextStyle(color: Colors.red.shade800, fontWeight: FontWeight.bold, fontSize: 11),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        rejectionReason,
+                                        style: TextStyle(color: Colors.red.shade900, fontSize: 12, fontWeight: FontWeight.w500),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+
                               const SizedBox(height: 14),
                               Divider(height: 1, color: Colors.grey.shade100, thickness: 1.5),
                               const SizedBox(height: 10),
-                              // Bottom Action Row (Edit & Delete buttons - hidden if sold/ordered)
+                              // Bottom Action Row (Edit hidden if sold or rejected)
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  if (status.toLowerCase() != 'sold' && status.toLowerCase() != 'completed' && status.toLowerCase() != 'ordered') ...[
+                                  if (!isSoldStatus && !isRejectedStatus) ...[
                                     TextButton.icon(
                                       onPressed: () {
                                         Navigator.push(
@@ -453,7 +494,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
     );
   }
 
-  // Helper builder for the 3 filter tabs
+  // Helper builder for the 4 filter tabs
   Widget _buildTabButton(String title) {
     final bool isSelected = _selectedTab == title;
     return Expanded(
@@ -471,7 +512,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> with SingleTickerPr
               style: TextStyle(
                 color: isSelected ? Colors.white : Colors.grey.shade600,
                 fontWeight: FontWeight.w900,
-                fontSize: 12,
+                fontSize: 11,
               ),
             ),
           ),

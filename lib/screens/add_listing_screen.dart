@@ -21,12 +21,15 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
   final _colorController = TextEditingController();
   final _weightController = TextEditingController();
   final _heightController = TextEditingController();
+  final _quantityController = TextEditingController(text: '1');
 
   String? _selectedCategory;
   String? _selectedSex;
-  String _selectedBarangay = 'Poblacion';
+  String _sellerBarangay = 'Loading barangay...'; // Fetched from user profile
+  String _selectedSaleType = 'per_head'; // 'per_head' or 'bulk'
 
   List<File> _livestockImages = [];
+  File? _livestockVideo;
   File? _certificateImage;
 
   bool _isSubmitting = false;
@@ -39,9 +42,6 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
     'Cattle / Cow', 'Carabao', 'Swine / Pig', 'Goat', 'Sheep', 'Poultry',
   ];
   final List<String> _sexOptions = ['Male', 'Female'];
-  final List<String> _alaminosBarangays = [
-    'Poblacion', 'Lucap', 'Alos', 'San Vicente', 'Telbang', 'Bolaney'
-  ];
 
   final Color _deepForestGreen = const Color(0xFF0A3622);
   final Color _vibrantGreen = const Color(0xFF1B5E20);
@@ -50,7 +50,7 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
   @override
   void initState() {
     super.initState();
-    _checkUserVerification();
+    _fetchUserData();
 
     _animController = AnimationController(
       vsync: this,
@@ -69,24 +69,35 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
     _colorController.dispose();
     _weightController.dispose();
     _heightController.dispose();
+    _quantityController.dispose();
     super.dispose();
   }
 
-  Future<void> _checkUserVerification() async {
+  /// Automatically fetches verification status and registered barangay from user profile
+  Future<void> _fetchUserData() async {
     final User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
         final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
         if (doc.exists && mounted) {
+          final data = doc.data() as Map<String, dynamic>;
           setState(() {
-            _verificationStatus = (doc.data() as Map<String, dynamic>)['verificationStatus'] ?? 'unverified';
+            _verificationStatus = data['verificationStatus'] ?? 'unverified';
+            _sellerBarangay = data['barangay'] ?? 'Poblacion'; // Pulls registered account barangay
           });
         }
       } catch (e) {
-        if (mounted) setState(() => _verificationStatus = 'unverified');
+        if (mounted) {
+          setState(() {
+            _verificationStatus = 'unverified';
+            _sellerBarangay = 'Poblacion';
+          });
+        }
       }
     } else {
-      if (mounted) setState(() => _verificationStatus = 'unverified');
+      if (mounted) {
+        setState(() => _verificationStatus = 'unverified');
+      }
     }
   }
 
@@ -106,6 +117,24 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
       }
     } catch (e) {
       if (mounted) _showSnackBar('Camera error: $e', isError: true);
+    }
+  }
+
+  Future<void> _recordLiveVideo() async {
+    final ImagePicker picker = ImagePicker();
+    try {
+      final XFile? video = await picker.pickVideo(
+        source: ImageSource.camera,
+        maxDuration: const Duration(seconds: 45),
+      );
+      if (video != null) {
+        setState(() {
+          _livestockVideo = File(video.path);
+        });
+        _showSnackBar('Live video recorded successfully!');
+      }
+    } catch (e) {
+      if (mounted) _showSnackBar('Video recording error: $e', isError: true);
     }
   }
 
@@ -160,6 +189,11 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
         throw Exception('Failed to upload livestock photos to cloud storage.');
       }
 
+      String? videoUrl;
+      if (_livestockVideo != null) {
+        videoUrl = await CloudinaryService.uploadVideo(_livestockVideo!);
+      }
+
       String? certUrl = await CloudinaryService.uploadImage(_certificateImage!);
       if (certUrl == null) throw Exception('Failed to upload ownership certificate to cloud storage.');
 
@@ -171,6 +205,9 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
       final livestockName = _nameController.text.trim();
       final category = _selectedCategory ?? 'Livestock';
 
+      // 30-Day Expiry Timestamp Calculation (Security Protocol)
+      final DateTime expiryDate = DateTime.now().add(const Duration(days: 30));
+
       WriteBatch batch = FirebaseFirestore.instance.batch();
 
       DocumentReference livestockRef = FirebaseFirestore.instance.collection('livestock').doc();
@@ -178,15 +215,18 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
         'livestock_name': livestockName,
         'category': category,
         'breed': livestockName,
+        'sale_type': _selectedSaleType,
+        'available_quantity': _selectedSaleType == 'bulk' ? (int.tryParse(_quantityController.text.trim()) ?? 1) : 1,
         'sex': _selectedSex ?? 'Not Specified',
         'color': _colorController.text.trim(),
         'weight': _weightController.text.trim(),
         'height': _heightController.text.trim(),
         'description': _descController.text.trim(),
         'price': double.tryParse(_priceController.text.trim()) ?? 0.0,
-        'sellerBarangay': _selectedBarangay, // Stored for distance calculation
+        'sellerBarangay': _sellerBarangay, // Automatically fetched from user account
         'imageUrl': uploadedImageUrls.first,
         'imageUrls': uploadedImageUrls,
+        'videoUrl': videoUrl ?? '',
         'ownershipCertificateUrl': certUrl,
         'status': 'Pending',
         'isAvailable': false,
@@ -195,6 +235,7 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
         'ownerEmail': user.email ?? '',
         'ownerName': ownerName,
         'createdAt': FieldValue.serverTimestamp(),
+        'expiresAt': Timestamp.fromDate(expiryDate), // 30-day lifespan limit
       });
 
       DocumentReference logRef = FirebaseFirestore.instance.collection('activity_logs').doc();
@@ -204,14 +245,14 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
         'user_email': user.email ?? '',
         'user_id': user.uid,
         'target_user_id': livestockRef.id,
-        'action': 'Listed new livestock: $livestockName (Category:$category)',
+        'action': 'Listed new livestock: $livestockName (Category: $category, Type: $_selectedSaleType)',
         'timestamp': DateTime.now().toIso8601String(),
       });
 
       await batch.commit();
 
       if (mounted) {
-        _showSnackBar('Listing submitted for admin verification!');
+        _showSnackBar('Listing submitted successfully! Valid for 30 days.');
         Navigator.pop(context);
       }
     } catch (e) {
@@ -342,7 +383,7 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  "To ensure trading authenticity, gallery uploads are restricted for livestock photos. Please capture up to 5 photos using your camera.",
+                                  "Security Protocol: Your location is automatically locked to your registered account barangay. Listings expire after 30 days.",
                                   style: TextStyle(color: Colors.brown.shade800, fontSize: 13, height: 1.4),
                                 ),
                               ),
@@ -351,7 +392,6 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
                         ),
                         const SizedBox(height: 20),
 
-                        // Livestock Photos Section
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -393,7 +433,7 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
                                             left: 0,
                                             right: 0,
                                             child: Container(
-                                              color: _vibrantGreen.withOpacity(0.8),
+                                              color: _vibrantGreen.withValues(alpha: 0.8),
                                               padding: const EdgeInsets.symmetric(vertical: 2),
                                               child: const Text(
                                                 "Primary",
@@ -452,9 +492,109 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
                             ],
                           ),
                         ),
+                        const SizedBox(height: 20),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildFieldLabel("LIVE VIDEO PREVIEW (${_livestockVideo != null ? '1' : '0'}/1)"),
+                            if (_livestockVideo != null)
+                              Text(
+                                "Required camera capture",
+                                style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 110,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            children: [
+                              if (_livestockVideo != null)
+                                Container(
+                                  width: 110,
+                                  height: 110,
+                                  margin: const EdgeInsets.only(right: 12),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: _vibrantGreen, width: 2),
+                                    color: Colors.black,
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(15),
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        const Center(
+                                          child: Icon(Icons.play_circle_filled_rounded, color: Colors.white, size: 40),
+                                        ),
+                                        Positioned(
+                                          bottom: 0,
+                                          left: 0,
+                                          right: 0,
+                                          child: Container(
+                                            color: _vibrantGreen.withOpacity(0.9),
+                                            padding: const EdgeInsets.symmetric(vertical: 2),
+                                            child: const Text(
+                                              "Recorded",
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          top: 4,
+                                          right: 4,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                _livestockVideo = null;
+                                              });
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                              child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+
+                              if (_livestockVideo == null)
+                                GestureDetector(
+                                  onTap: _recordLiveVideo,
+                                  child: Container(
+                                    width: 110,
+                                    height: 110,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: Colors.green.shade300, style: BorderStyle.solid, width: 1.5),
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.videocam_rounded, color: _vibrantGreen, size: 28),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          "Add Video",
+                                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _deepForestGreen),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                         const SizedBox(height: 24),
 
-                        // Ownership Certificate Upload Section
                         _buildFieldLabel("PROOF OF OWNERSHIP / CERTIFICATE (REQUIRED)"),
                         const SizedBox(height: 6),
                         GestureDetector(
@@ -525,14 +665,63 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
                         ),
                         const SizedBox(height: 16),
 
-                        // Seller Barangay Location Picker
-                        _buildFieldLabel("SELLER BARANGAY (ALAMINOS CITY)"),
+                        _buildFieldLabel("SALE TYPE"),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
-                          value: _selectedBarangay,
-                          decoration: _inputDecoration(hint: "Select origin barangay"),
-                          items: _alaminosBarangays.map((b) => DropdownMenuItem(value: b, child: Text("Brgy. $b"))).toList(),
-                          onChanged: (val) => setState(() => _selectedBarangay = val ?? 'Poblacion'),
+                          value: _selectedSaleType,
+                          decoration: _inputDecoration(hint: "Select sale type"),
+                          items: const [
+                            DropdownMenuItem(value: 'per_head', child: Text('Per Head (Individual Pricing)')),
+                            DropdownMenuItem(value: 'bulk', child: Text('Bulk / Batch (e.g. Poultry)')),
+                          ],
+                          onChanged: (val) => setState(() => _selectedSaleType = val ?? 'per_head'),
+                        ),
+                        const SizedBox(height: 16),
+
+                        if (_selectedSaleType == 'bulk') ...[
+                          _buildFieldLabel("AVAILABLE QUANTITY (HEADS / UNITS)"),
+                          const SizedBox(height: 6),
+                          TextFormField(
+                            controller: _quantityController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            decoration: _inputDecoration(hint: 'e.g. 50'),
+                            validator: (val) {
+                              if (_selectedSaleType == 'bulk') {
+                                if (val == null || val.trim().isEmpty) return "Please enter quantity";
+                                if (int.tryParse(val.trim()) == null || int.parse(val.trim()) <= 0) return "Enter valid quantity";
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        // Automatically Fetched Seller Barangay (Read-Only UI Badge)
+                        _buildFieldLabel("SELLER BARANGAY (AUTO-FETCHED FROM ACCOUNT)"),
+                        const SizedBox(height: 6),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.green.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.location_on_rounded, color: _vibrantGreen, size: 20),
+                              const SizedBox(width: 12),
+                              Text(
+                                "Brgy. $_sellerBarangay, Alaminos City",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: _deepForestGreen,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 16),
 
@@ -638,7 +827,7 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               elevation: 4,
-                              shadowColor: _vibrantGreen.withOpacity(0.4),
+                              shadowColor: _vibrantGreen.withValues(alpha: 0.4),
                             ),
                             onPressed: _submitData,
                             child: const Text('Publish Listing', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5)),

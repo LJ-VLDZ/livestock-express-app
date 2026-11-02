@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../utils/format_helper.dart';
 import '../services/notification_helper.dart';
 import 'checkout_screen.dart';
@@ -33,6 +34,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with SingleTickerProvid
 
   Map<String, dynamic>? _roomData;
   late bool _isSeller;
+  String? _counterpartPhone;
 
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
@@ -42,6 +44,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with SingleTickerProvid
     super.initState();
     _isSeller = _currentUser?.uid == widget.livestockItem['seller_id'];
     _fetchRoomDetails();
+    _fetchCounterpartContact();
 
     _animController = AnimationController(
       vsync: this,
@@ -58,9 +61,64 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with SingleTickerProvid
         setState(() {
           _roomData = doc.data();
         });
+        _fetchCounterpartContact();
       }
     } catch (e) {
       debugPrint("Error fetching room: $e");
+    }
+  }
+
+  Future<void> _fetchCounterpartContact() async {
+    try {
+      if (_currentUser == null) return;
+
+      List<dynamic> participants = _roomData?['participants'] ?? [];
+      String counterpartId = '';
+
+      if (participants.isNotEmpty) {
+        counterpartId = participants.firstWhere((id) => id != _currentUser!.uid, orElse: () => '');
+      }
+
+      if (counterpartId.isEmpty) {
+        counterpartId = _isSeller ? '' : (widget.livestockItem['seller_id'] ?? '');
+      }
+
+      if (counterpartId.isNotEmpty) {
+        final doc = await FirebaseFirestore.instance.collection('users').doc(counterpartId).get();
+        if (doc.exists && mounted) {
+          final data = doc.data() as Map<String, dynamic>;
+          setState(() {
+            _counterpartPhone = data['phone'] ?? data['contactNumber'] ?? '';
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching counterpart contact: $e");
+    }
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final cleanedNumber = phoneNumber.trim();
+    if (cleanedNumber.isEmpty || cleanedNumber == 'N/A') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Contact number is not available for this user.'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    final Uri launchUri = Uri(scheme: 'tel', path: cleanedNumber);
+    try {
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open phone dialer app.'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("Error launching dialer: $e");
     }
   }
 
@@ -103,15 +161,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with SingleTickerProvid
         'last_message_time': FieldValue.serverTimestamp(),
       });
 
-      // Automatically push a notification to the chat recipient using our helper
       List<dynamic> participants = _roomData?['participants'] ?? [user.uid, widget.livestockItem['seller_id']];
       String recipientUid = participants.firstWhere((id) => id != user.uid, orElse: () => widget.livestockItem['seller_id'] ?? '');
 
       if (recipientUid.isNotEmpty) {
+        final String livestockName = widget.livestockItem['livestock_name'] ?? 'Livestock Item';
         await NotificationHelper.sendNotification(
           recipientUid: recipientUid,
-          title: type == 'offer' ? "New Price Offer Received" : "New Message from ${widget.recipientName}",
-          body: type == 'offer' ? "Offered ₱${FormatHelper.formatCurrency(offerAmount ?? 0)}" : messageText,
+          title: type == 'offer' ? "New Price Offer Received 🏷️" : "New Message from ${widget.recipientName} 💬",
+          body: type == 'offer'
+              ? "Offered ₱${FormatHelper.formatCurrency(offerAmount ?? 0)} for $livestockName"
+              : messageText,
           type: type == 'offer' ? 'offer' : 'message',
         );
       }
@@ -265,6 +325,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> with SingleTickerProvid
         backgroundColor: _deepForestGreen,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          if (_counterpartPhone != null && _counterpartPhone!.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.phone_rounded),
+              tooltip: "Call Counterpart",
+              onPressed: () => _makePhoneCall(_counterpartPhone!),
+            ),
+        ],
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,

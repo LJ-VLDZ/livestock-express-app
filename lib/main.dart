@@ -20,7 +20,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Initialize FCM Push Notifications for Phase 3
+  // Initialize FCM Push Notifications for real-time ring alerts
   await PushNotificationService.initialize();
 
   runApp(const LivestockApp());

@@ -40,9 +40,9 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> with SingleTick
     super.dispose();
   }
 
-  // Opens camera picker to submit multi-angle inspection photos
   Future<void> _showInspectionUploadDialog(BuildContext context, String orderId) async {
     List<File> inspectionImages = [];
+    File? inspectionVideo;
     final ImagePicker picker = ImagePicker();
 
     showDialog(
@@ -55,62 +55,125 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> with SingleTick
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               title: Text("Livestock Inspection", style: TextStyle(fontWeight: FontWeight.w900, color: _deepForestGreen)),
               content: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.8,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Upload photos of all sides of the livestock body for online municipal inspection before dispatch.",
-                      style: TextStyle(fontSize: 13, color: Colors.grey, height: 1.4),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 100,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          ...inspectionImages.map((img) => Container(
-                            width: 90,
-                            height: 90,
-                            margin: const EdgeInsets.only(right: 8),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.file(img, fit: BoxFit.cover),
-                            ),
-                          )),
-                          if (inspectionImages.length < 4)
-                            GestureDetector(
-                              onTap: () async {
-                                final XFile? photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 80);
-                                if (photo != null) {
-                                  setDialogState(() {
-                                    inspectionImages.add(File(photo.path));
-                                  });
-                                }
-                              },
-                              child: Container(
-                                width: 90,
-                                height: 90,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.green.shade300, style: BorderStyle.solid),
+                width: MediaQuery.of(context).size.width * 0.85,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Upload body photos and a real-time inspection video for municipal online review before dispatch.",
+                        style: TextStyle(fontSize: 13, color: Colors.grey, height: 1.4),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text("Inspection Photos (Up to 4)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 90,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: [
+                            ...inspectionImages.map((img) => Container(
+                              width: 80,
+                              height: 80,
+                              margin: const EdgeInsets.only(right: 8),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(img, fit: BoxFit.cover),
+                              ),
+                            )),
+                            if (inspectionImages.length < 4)
+                              GestureDetector(
+                                onTap: () async {
+                                  final XFile? photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 80);
+                                  if (photo != null) {
+                                    setDialogState(() {
+                                      inspectionImages.add(File(photo.path));
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.green.shade300),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.camera_alt, color: _vibrantGreen, size: 20),
+                                      const SizedBox(height: 4),
+                                      const Text("Add Side", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
                                 ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text("Real-Time Inspection Video", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 90,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: [
+                            if (inspectionVideo != null)
+                              Container(
+                                width: 80,
+                                height: 80,
+                                margin: const EdgeInsets.only(right: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Stack(
+                                  alignment: Alignment.center,
                                   children: [
-                                    Icon(Icons.camera_alt, color: _vibrantGreen),
-                                    const SizedBox(height: 4),
-                                    const Text("Add Side", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                    const Icon(Icons.videocam_rounded, color: Colors.white, size: 32),
+                                    Positioned(
+                                      bottom: 4,
+                                      child: Text("Attached", style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                                    ),
                                   ],
                                 ),
                               ),
-                            ),
-                        ],
+                            if (inspectionVideo == null)
+                              GestureDetector(
+                                onTap: () async {
+                                  final XFile? video = await picker.pickVideo(source: ImageSource.camera, maxDuration: const Duration(minutes: 2));
+                                  if (video != null) {
+                                    setDialogState(() {
+                                      inspectionVideo = File(video.path);
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.green.shade300),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.videocam_rounded, color: _vibrantGreen, size: 20),
+                                      const SizedBox(height: 4),
+                                      const Text("Add Video", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               actions: [
@@ -120,11 +183,11 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> with SingleTick
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: _vibrantGreen, foregroundColor: Colors.white),
-                  onPressed: inspectionImages.isEmpty
+                  onPressed: (inspectionImages.isEmpty || inspectionVideo == null)
                       ? null
                       : () async {
                     Navigator.pop(dialogContext);
-                    _submitInspectionPhotos(orderId, inspectionImages);
+                    _submitInspectionMedia(orderId, inspectionImages, inspectionVideo!);
                   },
                   child: const Text("Submit for Review"),
                 ),
@@ -136,7 +199,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> with SingleTick
     );
   }
 
-  Future<void> _submitInspectionPhotos(String orderId, List<File> images) async {
+  Future<void> _submitInspectionMedia(String orderId, List<File> images, File videoFile) async {
     try {
       showDialog(
         context: context,
@@ -150,20 +213,25 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> with SingleTick
         if (url != null) uploadedUrls.add(url);
       }
 
+      String? videoUrl = await CloudinaryService.uploadImage(videoFile);
+
       await FirebaseFirestore.instance.collection('orders').doc(orderId).update({
         'inspectionPhotos': uploadedUrls,
+        'inspectionPhotoUrl': uploadedUrls.isNotEmpty ? uploadedUrls.first : '',
+        'inspectionVideoUrl': videoUrl ?? '',
+        'inspectionTag': true,
         'orderStatus': 'Pending Online Inspection Review',
         'inspectionSubmittedAt': FieldValue.serverTimestamp(),
       });
 
       if (mounted) {
-        Navigator.pop(context); // Pop loading
-        _showSnackBar("Inspection photos submitted to admin successfully!");
+        Navigator.pop(context);
+        _showSnackBar("Inspection media submitted successfully![cite: 11]");
       }
     } catch (e) {
       if (mounted) {
         Navigator.pop(context);
-        _showSnackBar("Failed to upload photos: $e", isError: true);
+        _showSnackBar("Failed to upload inspection media: $e", isError: true);
       }
     }
   }
@@ -175,23 +243,35 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> with SingleTick
 
       if (newStatus.toLowerCase() == 'dispatched') {
         bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-        if (serviceEnabled) {
-          LocationPermission permission = await Geolocator.checkPermission();
+        if (!serviceEnabled) {
+          _showSnackBar("Please enable phone GPS location services.", isError: true);
+          return;
+        }
+
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
           if (permission == LocationPermission.denied) {
-            permission = await Geolocator.requestPermission();
-          }
-          if (permission != LocationPermission.deniedForever) {
-            Position position = await Geolocator.getCurrentPosition(
-              desiredAccuracy: LocationAccuracy.high,
-            );
-            orderUpdateData['deliveryLatitude'] = position.latitude;
-            orderUpdateData['deliveryLongitude'] = position.longitude;
-            orderUpdateData['lastLocationUpdate'] = FieldValue.serverTimestamp();
+            _showSnackBar("Location permissions are denied.", isError: true);
+            return;
           }
         }
+
+        if (permission == LocationPermission.deniedForever) {
+          _showSnackBar("Location permissions are permanently denied.", isError: true);
+          return;
+        }
+
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.best,
+          timeLimit: const Duration(seconds: 10),
+        );
+
+        orderUpdateData['latitude'] = position.latitude;
+        orderUpdateData['longitude'] = position.longitude;
+        orderUpdateData['lastLocationUpdate'] = FieldValue.serverTimestamp();
       }
 
-      // Firestore Transaction to safely handle inventory and financial logs
       await firestore.runTransaction((transaction) async {
         DocumentReference orderRef = firestore.collection('orders').doc(orderId);
         transaction.update(orderRef, orderUpdateData);
@@ -203,7 +283,6 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> with SingleTick
             'isAvailable': false,
           });
 
-          // Log transaction for Laravel Admin panel summary (`transactions.blade.php`)
           DocumentReference transactionRef = firestore.collection('transactions').doc();
           transaction.set(transactionRef, {
             'orderId': orderId,
@@ -225,17 +304,24 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> with SingleTick
     }
   }
 
-  Future<void> _openMapRoute(BuildContext context, double? lat, double? lng, String barangay) async {
+  // FIXED: Routes specifically to buyer destination coordinates or barangay
+  Future<void> _openMapRoute(BuildContext context, double? buyerLat, double? buyerLng, String barangay) async {
     final Uri mapUrl;
-    if (lat != null && lng != null && lat != 0.0 && lng != 0.0) {
-      mapUrl = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving");
+    if (buyerLat != null && buyerLng != null && buyerLat != 0.0 && buyerLng != 0.0) {
+      mapUrl = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$buyerLat,$buyerLng&travelmode=driving");
     } else {
-      String destination = "Barangay $barangay, Alaminos City, Pangasinan";
-      mapUrl = Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(destination)}");
+      String destination = "Barangay $barangay, Alaminos City, Pangasinan, Philippines";
+      mapUrl = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeComponent(destination)}&travelmode=driving");
     }
 
-    if (await canLaunchUrl(mapUrl)) {
-      await launchUrl(mapUrl, mode: LaunchMode.externalApplication);
+    try {
+      if (await canLaunchUrl(mapUrl)) {
+        await launchUrl(mapUrl, mode: LaunchMode.externalApplication);
+      } else {
+        _showSnackBar("Could not launch maps navigation.", isError: true);
+      }
+    } catch (e) {
+      _showSnackBar("Error opening map route: $e", isError: true);
     }
   }
 
@@ -308,10 +394,12 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> with SingleTick
                 final String livestockId = data['livestockId'] ?? data['productId'] ?? '';
                 final double totalAmount = (data['totalAmount'] ?? 0.0).toDouble();
                 final String barangay = data['deliveryBarangay'] ?? data['barangay'] ?? 'Poblacion';
-                final String phone = data['buyerPhone'] ?? 'N/A';
                 final String status = data['orderStatus'] ?? data['status'] ?? 'Pending';
-                final double? deliveryLat = data['deliveryLatitude'];
-                final double? deliveryLng = data['deliveryLongitude'];
+
+                // FIXED: Explicitly reference buyer destination coordinates for routing
+                final double? buyerLat = data['deliveryLatitude'];
+                final double? buyerLng = data['deliveryLongitude'];
+
                 String statusLower = status.toLowerCase();
 
                 return Container(
@@ -348,7 +436,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> with SingleTick
                               ),
                               icon: const Icon(Icons.navigation_rounded, size: 14),
                               label: const Text("Route", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
-                              onPressed: () => _openMapRoute(context, deliveryLat, deliveryLng, barangay),
+                              onPressed: () => _openMapRoute(context, buyerLat, buyerLng, barangay),
                             ),
                           ],
                         ),
@@ -374,12 +462,12 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> with SingleTick
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                 ),
                                 onPressed: () => _showInspectionUploadDialog(context, orderId),
-                                child: const Text("Upload Inspection Photos", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
+                                child: const Text("Upload Inspection Media", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
                               ),
                             if (statusLower.contains('inspection approved') || statusLower.contains('city veterinary inspection approved'))
                               ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: _vibrantGreen,
+                                  backgroundColor: Colors.blue.shade700,
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                 ),
@@ -389,7 +477,7 @@ class _SellerOrdersScreenState extends State<SellerOrdersScreen> with SingleTick
                             if (statusLower.contains('dispatched'))
                               ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue.shade700,
+                                  backgroundColor: _vibrantGreen,
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                 ),

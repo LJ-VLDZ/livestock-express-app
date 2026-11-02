@@ -6,7 +6,7 @@ import 'package:camera/camera.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'dashboard_screen.dart';
 import 'id_camera_screen.dart';
-import 'face_camera_screen.dart'; // Added import for facial verification
+import 'face_camera_screen.dart';
 import 'package:livestock_app/services/cloudinary_service.dart';
 
 class UploadIDScreen extends StatefulWidget {
@@ -20,9 +20,9 @@ class UploadIDScreen extends StatefulWidget {
 class _UploadIDScreenState extends State<UploadIDScreen> with SingleTickerProviderStateMixin {
   File? _frontImage;
   File? _backImage;
-  File? _faceImage; // State for face selfie
+  File? _faceImage;
   bool _frontCaptured = false;
-  bool _backCaptured = false; // Tracks back image capture
+  bool _backCaptured = false;
   bool _isUploading = false;
   String _extractedInfoText = "OCR ID Scanner Ready";
 
@@ -92,7 +92,6 @@ class _UploadIDScreenState extends State<UploadIDScreen> with SingleTickerProvid
     try {
       final cameras = await availableCameras();
       if (cameras.isNotEmpty) {
-        // Try to pick front-facing camera if available, otherwise default to first
         CameraDescription selectedCamera = cameras.first;
         for (var camera in cameras) {
           if (camera.lensDirection == CameraLensDirection.front) {
@@ -170,7 +169,6 @@ class _UploadIDScreenState extends State<UploadIDScreen> with SingleTickerProvid
 
       String? parsedBarangay = await _parseIDCard(_frontImage!);
 
-      // Upload Front, Back, and Face Selfie to Cloudinary
       final String? frontUrl = await CloudinaryService.uploadImage(_frontImage!);
       final String? backUrl = await CloudinaryService.uploadImage(_backImage!);
       final String? faceUrl = await CloudinaryService.uploadImage(_faceImage!);
@@ -182,7 +180,8 @@ class _UploadIDScreenState extends State<UploadIDScreen> with SingleTickerProvid
       Map<String, dynamic> updateData = {
         'idFrontUrl': frontUrl,
         'idBackUrl': backUrl,
-        'faceUrl': faceUrl, // Saved facial verification asset URL
+        'faceUrl': faceUrl,
+        'profileImageUrl': faceUrl, // Set face capture as profile picture
         'idUrl': frontUrl,
         'idType': widget.idType,
         'verificationStatus': 'pending',
@@ -195,6 +194,7 @@ class _UploadIDScreenState extends State<UploadIDScreen> with SingleTickerProvid
       }
 
       await FirebaseFirestore.instance.collection('users').doc(uid).set(updateData, SetOptions(merge: true));
+      await currentUser.updatePhotoURL(faceUrl);
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -312,11 +312,10 @@ class _UploadIDScreenState extends State<UploadIDScreen> with SingleTickerProvid
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Complete the ID capture and facial verification process for your ${widget.idType}.",
+                "Complete the ID capture (strict anti-blur checks) and blink-verified facial scan for your ${widget.idType}.",
                 style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.4),
               ),
               const SizedBox(height: 16),
-
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -338,20 +337,16 @@ class _UploadIDScreenState extends State<UploadIDScreen> with SingleTickerProvid
                 ),
               ),
               const SizedBox(height: 20),
-
               _buildImageSlot("Front Side ID", _frontImage, () => _handleImageSelection(true)),
               const SizedBox(height: 20),
-
               if (_frontCaptured) ...[
                 _buildImageSlot("Back Side ID", _backImage, () => _handleImageSelection(false)),
                 const SizedBox(height: 20),
               ],
-
               if (_backCaptured) ...[
-                _buildImageSlot("Facial Verification (Selfie)", _faceImage, _handleFaceSelection),
+                _buildImageSlot("Facial Verification (Selfie PFP)", _faceImage, _handleFaceSelection),
                 const SizedBox(height: 24),
               ],
-
               SizedBox(
                 width: double.infinity,
                 height: 54,

@@ -23,8 +23,6 @@ class _VerificationGuideScreenState extends State<VerificationGuideScreen> with 
 
   final List<String> _idTypes = [
     'Driver\'s License',
-    'Passport',
-    'Voter\'s ID',
     'National ID'
   ];
 
@@ -32,20 +30,20 @@ class _VerificationGuideScreenState extends State<VerificationGuideScreen> with 
     {
       "icon": Icons.credit_card_rounded,
       "title": "Prepare Your ID",
-      "desc": "Make sure your official government or school ID is valid and ready.",
+      "desc": "Make sure your official PH National ID or Driver's License is valid and ready.",
       "color": Colors.blueAccent
     },
     {
       "icon": Icons.wb_sunny_rounded,
       "title": "Clear Lighting",
-      "desc": "Find a well-lit area to avoid shadows or glare on the card surface.",
+      "desc": "Find a well-lit area to avoid shadows, glare, or blurriness on the card.",
       "color": Colors.orangeAccent
     },
     {
       "icon": Icons.camera_front_rounded,
-      "title": "Align & Capture",
-      "desc": "Center your ID clearly inside the live camera frame to proceed.",
-      "color": const Color(0xFF1B5E20)
+      "title": "Facial Selfie Capture",
+      "desc": "Position your face in front of the camera for verification and profile picture setup.",
+      "color": Color(0xFF1B5E20)
     },
   ];
 

@@ -16,13 +16,14 @@ class _EditListingScreenState extends State<EditListingScreen> with SingleTicker
   late TextEditingController _nameController;
   late TextEditingController _priceController;
   late TextEditingController _descController;
+  late TextEditingController _quantityController;
 
+  late String _selectedSaleType;
   bool _isLoading = false;
 
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
 
-  // Ultra-Rich Modern Agricultural Color Suite
   final Color _deepForestGreen = const Color(0xFF0A3622);
   final Color _vibrantGreen = const Color(0xFF1B5E20);
 
@@ -32,6 +33,8 @@ class _EditListingScreenState extends State<EditListingScreen> with SingleTicker
     _nameController = TextEditingController(text: widget.currentData['livestock_name'] ?? '');
     _priceController = TextEditingController(text: (widget.currentData['price'] ?? '').toString());
     _descController = TextEditingController(text: widget.currentData['description'] ?? '');
+    _selectedSaleType = widget.currentData['sale_type'] ?? 'per_head';
+    _quantityController = TextEditingController(text: (widget.currentData['available_quantity'] ?? 1).toString());
 
     _animController = AnimationController(
       vsync: this,
@@ -47,6 +50,7 @@ class _EditListingScreenState extends State<EditListingScreen> with SingleTicker
     _nameController.dispose();
     _priceController.dispose();
     _descController.dispose();
+    _quantityController.dispose();
     super.dispose();
   }
 
@@ -58,6 +62,8 @@ class _EditListingScreenState extends State<EditListingScreen> with SingleTicker
       await FirebaseFirestore.instance.collection('livestock').doc(widget.docId).update({
         'livestock_name': _nameController.text.trim(),
         'price': double.tryParse(_priceController.text.trim()) ?? 0.0,
+        'sale_type': _selectedSaleType,
+        'available_quantity': _selectedSaleType == 'bulk' ? (int.tryParse(_quantityController.text.trim()) ?? 1) : 1,
         'description': _descController.text.trim(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -117,7 +123,6 @@ class _EditListingScreenState extends State<EditListingScreen> with SingleTicker
                   style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 24),
-                // Name Field
                 TextFormField(
                   controller: _nameController,
                   style: const TextStyle(fontSize: 14),
@@ -135,7 +140,36 @@ class _EditListingScreenState extends State<EditListingScreen> with SingleTicker
                   validator: (value) => value == null || value.trim().isEmpty ? "Please enter a livestock name" : null,
                 ),
                 const SizedBox(height: 16),
-                // Price Field
+                DropdownButtonFormField<String>(
+                  value: _selectedSaleType,
+                  decoration: InputDecoration(
+                    labelText: "Sale Type",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.green.shade200)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.green.shade200)),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'per_head', child: Text('Per Head')),
+                    DropdownMenuItem(value: 'bulk', child: Text('Bulk / Batch')),
+                  ],
+                  onChanged: (val) => setState(() => _selectedSaleType = val ?? 'per_head'),
+                ),
+                const SizedBox(height: 16),
+                if (_selectedSaleType == 'bulk') ...[
+                  TextFormField(
+                    controller: _quantityController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: "Available Quantity",
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.green.shade200)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.green.shade200)),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 TextFormField(
                   controller: _priceController,
                   keyboardType: TextInputType.number,
@@ -158,7 +192,6 @@ class _EditListingScreenState extends State<EditListingScreen> with SingleTicker
                   },
                 ),
                 const SizedBox(height: 16),
-                // Description Field
                 TextFormField(
                   controller: _descController,
                   maxLines: 4,
@@ -180,7 +213,6 @@ class _EditListingScreenState extends State<EditListingScreen> with SingleTicker
                   ),
                 ),
                 const SizedBox(height: 32),
-                // Submit Button
                 SizedBox(
                   height: 54,
                   child: _isLoading

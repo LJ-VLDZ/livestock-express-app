@@ -20,7 +20,6 @@ class _AccountScreenState extends State<AccountScreen> with SingleTickerProvider
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
 
-  // Ultra-Rich Modern Agricultural Color Suite
   final Color _deepForestGreen = const Color(0xFF0A3622);
   final Color _vibrantGreen = const Color(0xFF1B5E20);
   final Color _softGreenTint = const Color(0xFFE8F5E9);
@@ -50,8 +49,12 @@ class _AccountScreenState extends State<AccountScreen> with SingleTickerProvider
   }
 
   void _showPersonalInformation(Map<String, dynamic> userData) {
+    final TextEditingController nameController = TextEditingController(text: userData['name'] ?? userData['fullName'] ?? '');
+    final TextEditingController phoneController = TextEditingController(text: userData['phone'] ?? '');
+    final TextEditingController barangayController = TextEditingController(text: userData['barangay'] ?? '');
     final TextEditingController emailController = TextEditingController(text: userData['email'] ?? user?.email ?? '');
-    bool isUpdatingEmail = false;
+
+    bool isSaving = false;
 
     showModalBottomSheet(
       context: context,
@@ -66,141 +69,207 @@ class _AccountScreenState extends State<AccountScreen> with SingleTickerProvider
             top: 24,
             bottom: MediaQuery.of(context).viewInsets.bottom + 24,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Personal Information", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _deepForestGreen)),
-              const SizedBox(height: 16),
-              _buildInfoTile(Icons.person_outline_rounded, "Full Name", userData['name'] ?? "Not Provided"),
-              _buildInfoTile(Icons.phone_android_rounded, "Contact Number", userData['phone'] ?? "Not Provided"),
-              _buildInfoTile(Icons.location_on_outlined, "Barangay", "${userData['barangay'] ?? 'Poblacion'}, Alaminos City"),
-              const SizedBox(height: 12),
-
-              Text("Email Address", style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        hintText: "Enter email address",
-                        isDense: true,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green.shade200)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green.shade200)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _vibrantGreen, width: 2)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      ),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Edit Personal Information", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _deepForestGreen)),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(context),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text("Full Name", style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    hintText: "Enter full name",
+                    prefixIcon: Icon(Icons.person_outline_rounded, color: _vibrantGreen),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green.shade200)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green.shade200)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _vibrantGreen, width: 2)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
+                ),
+                const SizedBox(height: 14),
+                Text("Contact Number", style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    hintText: "09XXXXXXXXX",
+                    prefixIcon: Icon(Icons.phone_android_rounded, color: _vibrantGreen),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green.shade200)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green.shade200)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _vibrantGreen, width: 2)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text("Barangay (Alaminos City)", style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: barangayController,
+                  decoration: InputDecoration(
+                    hintText: "Enter or select barangay",
+                    prefixIcon: Icon(Icons.location_on_outlined, color: _vibrantGreen),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green.shade200)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green.shade200)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _vibrantGreen, width: 2)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text("Email Address", style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    hintText: "Enter email address",
+                    prefixIcon: Icon(Icons.email_outlined, color: _vibrantGreen),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green.shade200)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.green.shade200)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _vibrantGreen, width: 2)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _vibrantGreen,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
-                    onPressed: isUpdatingEmail ? null : () async {
-                      setModalState(() => isUpdatingEmail = true);
+                    onPressed: isSaving ? null : () async {
+                      setModalState(() => isSaving = true);
                       try {
-                        String newEmail = emailController.text.trim();
-                        if (newEmail.isNotEmpty && user != null) {
-                          await FirebaseFirestore.instance.collection('users').doc(user!.uid).update({'email': newEmail});
-                          await user!.verifyBeforeUpdateEmail(newEmail);
+                        if (user != null) {
+                          String newEmail = emailController.text.trim();
+                          String newName = nameController.text.trim();
+                          String newPhone = phoneController.text.trim();
+                          String newBarangay = barangayController.text.trim();
+
+                          await FirebaseFirestore.instance.collection('users').doc(user!.uid).update({
+                            'name': newName,
+                            'fullName': newName,
+                            'phone': newPhone,
+                            'barangay': newBarangay,
+                            'email': newEmail,
+                          });
+
+                          if (newEmail.isNotEmpty && newEmail != user!.email) {
+                            await user!.verifyBeforeUpdateEmail(newEmail);
+                          }
 
                           if (mounted) {
-                            _showSnackBar("Email updated! Verification link sent.");
+                            Navigator.pop(context);
+                            _showSnackBar("Profile updated successfully!");
                           }
                         }
                       } catch (e) {
                         if (mounted) {
-                          _showSnackBar("Error: $e", isError: true);
+                          _showSnackBar("Error updating profile: $e", isError: true);
                         }
                       } finally {
-                        setModalState(() => isUpdatingEmail = false);
+                        setModalState(() => isSaving = false);
                       }
                     },
-                    child: isUpdatingEmail
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text("Save & Verify", style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: isSaving
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text("Save Changes", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey.shade100,
-                    foregroundColor: Colors.black87,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Close", style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  void _showNotificationsSettings() {
-    bool pushEnabled = true;
+  void _showNotificationsSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool pushEnabled = prefs.getBool('notif_push') ?? true;
+    bool offersEnabled = prefs.getBool('notif_offers') ?? true;
+    bool adminUpdatesEnabled = prefs.getBool('notif_admin') ?? true;
+
+    if (!mounted) return;
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text("Notification Preferences", style: TextStyle(fontWeight: FontWeight.bold, color: _deepForestGreen)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SwitchListTile(
-                title: const Text("Push Notifications", style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text("Receive trade offers & admin updates"),
-                value: pushEnabled,
-                activeColor: _vibrantGreen,
-                onChanged: (val) => setDialogState(() => pushEnabled = val),
-              ),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SwitchListTile(
+                  title: const Text("Push Notifications", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                  subtitle: const Text("Master switch for app alerts", style: TextStyle(fontSize: 12)),
+                  value: pushEnabled,
+                  activeColor: _vibrantGreen,
+                  onChanged: (val) => setDialogState(() => pushEnabled = val),
+                ),
+                const Divider(),
+                SwitchListTile(
+                  title: const Text("Trade Offers & Inquiries", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                  subtitle: const Text("Alerts for incoming chat messages and offers", style: TextStyle(fontSize: 12)),
+                  value: offersEnabled,
+                  activeColor: _vibrantGreen,
+                  onChanged: pushEnabled ? (val) => setDialogState(() => offersEnabled = val) : null,
+                ),
+                const Divider(),
+                SwitchListTile(
+                  title: const Text("Admin & Verification Updates", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                  subtitle: const Text("Alerts when ID verification or listings are approved", style: TextStyle(fontSize: 12)),
+                  value: adminUpdatesEnabled,
+                  activeColor: _vibrantGreen,
+                  onChanged: pushEnabled ? (val) => setDialogState(() => adminUpdatesEnabled = val) : null,
+                ),
+              ],
+            ),
           ),
           actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Cancel", style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+            ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: _vibrantGreen,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Save", style: TextStyle(fontWeight: FontWeight.bold)),
+              onPressed: () async {
+                await prefs.setBool('notif_push', pushEnabled);
+                await prefs.setBool('notif_offers', offersEnabled);
+                await prefs.setBool('notif_admin', adminUpdatesEnabled);
+
+                if (mounted) {
+                  Navigator.pop(context);
+                  _showSnackBar("Notification preferences saved!");
+                }
+              },
+              child: const Text("Save Preferences", style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoTile(IconData icon, String title, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14.0),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: _vibrantGreen),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
-              Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: _deepForestGreen)),
-            ],
-          ),
-        ],
       ),
     );
   }
@@ -280,13 +349,17 @@ class _AccountScreenState extends State<AccountScreen> with SingleTickerProvider
               String verificationStatus = 'unverified';
               String fullName = "Livestock Trader";
               String contactNumber = "";
+              double rating = 5.0;
+              int ratingCount = 0;
               Map<String, dynamic> userData = {};
 
               if (snapshot.hasData && snapshot.data!.exists) {
                 userData = snapshot.data!.data() as Map<String, dynamic>;
                 verificationStatus = userData['verificationStatus'] ?? 'unverified';
-                fullName = userData['name'] ?? "Livestock Trader";
+                fullName = userData['name'] ?? userData['fullName'] ?? "Livestock Trader";
                 contactNumber = userData['phone'] ?? userData['email'] ?? user!.email ?? "";
+                rating = (userData['rating'] ?? 5.0).toDouble();
+                ratingCount = (userData['ratingCount'] ?? 0).toInt();
               }
 
               Color statusColor;
@@ -326,13 +399,12 @@ class _AccountScreenState extends State<AccountScreen> with SingleTickerProvider
                     ),
                   ),
                   const SizedBox(height: 10),
-
                   Expanded(
                     child: ListView(
                       physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
                       children: [
-                        // Profile Card
+                        // Profile Card with Ratings below Name & Contact
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
@@ -373,6 +445,18 @@ class _AccountScreenState extends State<AccountScreen> with SingleTickerProvider
                                 contactNumber,
                                 style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
                               ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "${rating.toStringAsFixed(1)} ($ratingCount reviews)",
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+                                  ),
+                                ],
+                              ),
                               const SizedBox(height: 12),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -389,11 +473,8 @@ class _AccountScreenState extends State<AccountScreen> with SingleTickerProvider
                           ),
                         ),
                         const SizedBox(height: 24),
-
                         Text("Seller Verification", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _deepForestGreen)),
                         const SizedBox(height: 10),
-
-                        // Verification Gating Card
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
@@ -401,11 +482,7 @@ class _AccountScreenState extends State<AccountScreen> with SingleTickerProvider
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: Colors.green.shade100, width: 1),
                             boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
+                              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
                             ],
                           ),
                           child: Column(
@@ -449,8 +526,6 @@ class _AccountScreenState extends State<AccountScreen> with SingleTickerProvider
                           ),
                         ),
                         const SizedBox(height: 24),
-
-                        // My Purchases Dashboard
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -458,11 +533,7 @@ class _AccountScreenState extends State<AccountScreen> with SingleTickerProvider
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: Colors.green.shade100, width: 1),
                             boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
+                              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
                             ],
                           ),
                           child: Column(
@@ -518,22 +589,15 @@ class _AccountScreenState extends State<AccountScreen> with SingleTickerProvider
                           ),
                         ),
                         const SizedBox(height: 24),
-
                         Text("Settings & Preferences", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _deepForestGreen)),
                         const SizedBox(height: 10),
-
-                        // Menu Options Group (Redundant seller order menu item safely removed)
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: Colors.green.shade100, width: 1),
                             boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
+                              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
                             ],
                           ),
                           child: Column(
@@ -554,9 +618,7 @@ class _AccountScreenState extends State<AccountScreen> with SingleTickerProvider
                                 onTap: () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const DeliveryAddressListScreen(isCheckoutMode: false),
-                                    ),
+                                    MaterialPageRoute(builder: (_) => const DeliveryAddressListScreen(isCheckoutMode: false)),
                                   );
                                 },
                               ),
@@ -585,8 +647,6 @@ class _AccountScreenState extends State<AccountScreen> with SingleTickerProvider
                           ),
                         ),
                         const SizedBox(height: 24),
-
-                        // Logout Action Button
                         SizedBox(
                           width: double.infinity,
                           height: 52,

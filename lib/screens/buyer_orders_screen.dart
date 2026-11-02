@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:video_player/video_player.dart';
 import 'order_tracking_screen.dart';
-import 'seller_orders_screen.dart'; // Ensure you have this file created
+import 'seller_orders_screen.dart';
 
 class BuyerOrdersScreen extends StatefulWidget {
   final String initialFilter;
@@ -66,11 +67,11 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> with SingleTicker
         await FirebaseFirestore.instance.collection('orders').doc(orderId).update({
           'orderStatus': 'Completed',
         });
-        if (context.mounted) {
+        if (mounted) {
           _showSnackBar("Order marked as Completed! You can now rate the seller.");
         }
       } catch (e) {
-        if (context.mounted) {
+        if (mounted) {
           _showSnackBar("Error updating order: $e", isError: true);
         }
       }
@@ -83,49 +84,61 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> with SingleTicker
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
+      builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text("Rate Seller & Transaction", style: TextStyle(fontWeight: FontWeight.bold, color: _deepForestGreen)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text("How was your experience with this livestock trade?", style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) {
-                  return IconButton(
-                    icon: Icon(
-                      index < rating ? Icons.star_rounded : Icons.star_border_rounded,
-                      color: Colors.amber,
-                      size: 32,
+          content: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.6,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("How was your experience with this livestock trade?", style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      final starIndex = index + 1;
+                      return GestureDetector(
+                        onTap: () => setDialogState(() => rating = starIndex),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                          child: Icon(
+                            starIndex <= rating ? Icons.star_rounded : Icons.star_border_rounded,
+                            color: Colors.amber,
+                            size: 36,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: commentController,
+                    maxLines: 3,
+                    style: const TextStyle(fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: "Write a review about the livestock condition...",
+                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.green.shade200)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.green.shade200)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: _vibrantGreen, width: 2)),
+                      filled: true,
+                      fillColor: const Color(0xFFF8FBF8),
+                      contentPadding: const EdgeInsets.all(16),
                     ),
-                    onPressed: () => setDialogState(() => rating = index + 1),
-                  );
-                }),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: commentController,
-                maxLines: 3,
-                style: const TextStyle(fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: "Write a review about the livestock condition...",
-                  hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.green.shade200)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.green.shade200)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: _vibrantGreen, width: 2)),
-                  filled: true,
-                  fillColor: const Color(0xFFF8FBF8),
-                  contentPadding: const EdgeInsets.all(16),
-                ),
-              ),
-            ],
+            ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: Text("Cancel", style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
             ),
             ElevatedButton(
@@ -135,35 +148,43 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> with SingleTicker
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () async {
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
                 try {
                   await FirebaseFirestore.instance.collection('orders').doc(orderId).update({
                     'rating': rating,
                     'review': commentController.text.trim(),
                     'isRated': true,
+                    'ratedAt': FieldValue.serverTimestamp(),
                   });
 
-                  final sellerDocRef = FirebaseFirestore.instance.collection('users').doc(sellerId);
-                  await FirebaseFirestore.instance.runTransaction((transaction) async {
-                    final sellerSnapshot = await transaction.get(sellerDocRef);
-                    if (sellerSnapshot.exists) {
-                      final data = sellerSnapshot.data() as Map<String, dynamic>;
-                      double currentRating = (data['rating'] ?? 5.0).toDouble();
-                      int ratingCount = (data['ratingCount'] ?? 0).toInt();
+                  if (sellerId.isNotEmpty) {
+                    final sellerDocRef = FirebaseFirestore.instance.collection('users').doc(sellerId);
+                    await FirebaseFirestore.instance.runTransaction((transaction) async {
+                      final sellerSnapshot = await transaction.get(sellerDocRef);
+                      if (sellerSnapshot.exists) {
+                        final data = sellerSnapshot.data() as Map<String, dynamic>;
+                        double currentRating = 5.0;
+                        if (data['rating'] != null) {
+                          currentRating = (data['rating'] is int)
+                              ? (data['rating'] as int).toDouble()
+                              : (data['rating'] ?? 5.0).toDouble();
+                        }
+                        int ratingCount = (data['ratingCount'] ?? 0).toInt();
 
-                      double newRating = ((currentRating * ratingCount) + rating) / (ratingCount + 1);
-                      transaction.update(sellerDocRef, {
-                        'rating': newRating,
-                        'ratingCount': ratingCount + 1,
-                      });
-                    }
-                  });
+                        double newRating = ((currentRating * ratingCount) + rating) / (ratingCount + 1);
+                        transaction.update(sellerDocRef, {
+                          'rating': newRating,
+                          'ratingCount': ratingCount + 1,
+                        });
+                      }
+                    });
+                  }
 
-                  if (context.mounted) {
+                  if (mounted) {
                     _showSnackBar("Rating submitted successfully! Thank you.");
                   }
                 } catch (e) {
-                  if (context.mounted) {
+                  if (mounted) {
                     _showSnackBar("Failed to submit rating: $e", isError: true);
                   }
                 }
@@ -212,9 +233,8 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> with SingleTicker
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
-        actions: [
-          // Automatically displays the seller sold-items button ONLY if the user has livestock listings[cite: 1]
-          const SellerDashboardAction(),
+        actions: const [
+          SellerDashboardAction(),
         ],
       ),
       body: FadeTransition(
@@ -223,7 +243,6 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> with SingleTicker
             ? Center(child: Text("Please log in to view your orders.", style: TextStyle(fontWeight: FontWeight.w600, color: _deepForestGreen)))
             : Column(
           children: [
-            // Floating Bento Filter Tabs
             Container(
               margin: const EdgeInsets.fromLTRB(20, 20, 20, 10),
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
@@ -242,8 +261,6 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> with SingleTicker
                 ],
               ),
             ),
-
-            // Orders List Stream
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
@@ -301,8 +318,12 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> with SingleTicker
                       final doc = orders[index];
                       final data = doc.data() as Map<String, dynamic>;
                       final String status = data['orderStatus'] ?? 'Pending Verification & Dispatch';
+                      final bool isRated = data['isRated'] ?? false;
 
-                      // Status Styling Logic
+                      // Check if inspection tag or media is present
+                      final String? inspectionVideoUrl = data['inspectionVideoUrl'] ?? data['videoUrl'];
+                      final bool hasInspectionTag = status.toLowerCase().contains('inspection') || data['inspectionTag'] == true || inspectionVideoUrl != null;
+
                       Color statusColor = Colors.orange.shade800;
                       Color statusBg = Colors.orange.shade50;
                       if (status.toLowerCase().contains('delivered') || status.toLowerCase().contains('dispatched')) {
@@ -316,7 +337,6 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> with SingleTicker
                         statusBg = Colors.red.shade50;
                       }
 
-                      // Safe amount parsing
                       double totalAmount = 0.0;
                       var rawAmount = data['totalAmount'];
                       if (rawAmount is int) {
@@ -353,6 +373,40 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> with SingleTicker
                                 ],
                               ),
                               Divider(height: 32, color: Colors.green.shade50, thickness: 2),
+
+                              // Real-Time Inspection Video Widget when inspection tag/status is active
+                              if (hasInspectionTag && inspectionVideoUrl != null && inspectionVideoUrl.isNotEmpty) ...[
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade50,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: Colors.green.shade200),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(Icons.videocam_rounded, size: 16, color: _vibrantGreen),
+                                          const SizedBox(width: 8),
+                                          Text("Live Inspection Video", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: _deepForestGreen)),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: SizedBox(
+                                          height: 180,
+                                          child: RealTimeInspectionVideoPlayer(videoUrl: inspectionVideoUrl),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+
                               Row(
                                 children: [
                                   Container(
@@ -383,8 +437,6 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> with SingleTicker
                                 ),
                               ),
                               const SizedBox(height: 24),
-
-                              // Track Order Button
                               SizedBox(
                                 width: double.infinity,
                                 height: 50,
@@ -403,44 +455,6 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> with SingleTicker
                                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OrderTrackingScreen(orderId: doc.id))),
                                 ),
                               ),
-
-                              // Conditional Completion Buttons
-                              if (status.toLowerCase() == 'delivered') ...[
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 50,
-                                  child: ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: _vibrantGreen,
-                                      foregroundColor: Colors.white,
-                                      elevation: 4,
-                                      shadowColor: _vibrantGreen.withOpacity(0.3),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                    ),
-                                    icon: const Icon(Icons.check_circle_rounded, size: 20),
-                                    label: const Text("Mark as Received", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                                    onPressed: () => _confirmReceived(context, doc.id),
-                                  ),
-                                ),
-                              ] else if (status.toLowerCase() == 'completed' && !(data['isRated'] ?? false)) ...[
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 50,
-                                  child: ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.amber.shade400,
-                                      foregroundColor: _deepForestGreen,
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                    ),
-                                    icon: const Icon(Icons.star_rounded, size: 20),
-                                    label: const Text("Rate Transaction", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
-                                    onPressed: () => _showRatingDialog(context, data['sellerId'] ?? '', doc.id),
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
                         ),
@@ -488,10 +502,69 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> with SingleTicker
   }
 }
 
-/// Helper widget that checks if the current user has livestock listings[cite: 1].
-/// If yes, displays a storefront button in the AppBar to view sold items.
-/// Helper widget that checks if the current user has livestock listings.
-/// If yes, displays a storefront button in the AppBar to view sold items.
+// Stateful Widget helper for playing live inspection videos on buyer orders
+class RealTimeInspectionVideoPlayer extends StatefulWidget {
+  final String videoUrl;
+  const RealTimeInspectionVideoPlayer({super.key, required this.videoUrl});
+
+  @override
+  State<RealTimeInspectionVideoPlayer> createState() => _RealTimeInspectionVideoPlayerState();
+}
+
+class _RealTimeInspectionVideoPlayerState extends State<RealTimeInspectionVideoPlayer> {
+  late VideoPlayerController _controller;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
+      ..initialize().then((_) {
+        setState(() {
+          _isInitialized = true;
+        });
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return Container(
+        color: Colors.black12,
+        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        AspectRatio(
+          aspectRatio: _controller.value.aspectRatio,
+          child: VideoPlayer(_controller),
+        ),
+        IconButton(
+          icon: Icon(
+            _controller.value.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+            color: Colors.white,
+            size: 48,
+          ),
+          onPressed: () {
+            setState(() {
+              _controller.value.isPlaying ? _controller.pause() : _controller.play();
+            });
+          },
+        ),
+      ],
+    );
+  }
+}
+
 class SellerDashboardAction extends StatelessWidget {
   const SellerDashboardAction({super.key});
 
@@ -502,8 +575,8 @@ class SellerDashboardAction extends StatelessWidget {
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('Livestock') // Fixed: Capital 'L' to match your Firestore collection
-          .where('seller_id', isEqualTo: user.uid) // Fixed: Changed to 'seller_id' with an underscore
+          .collection('Livestock')
+          .where('seller_id', isEqualTo: user.uid)
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.connectionState == ConnectionState.waiting) {

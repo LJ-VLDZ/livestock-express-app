@@ -91,24 +91,21 @@ class _LoginScreenState extends State<LoginScreen>
             .get();
 
         if (querySnapshot.docs.isEmpty) {
-          throw FirebaseAuthException(
-            code: 'user-not-found',
-            message: 'No account found with this mobile number.',
-          );
+          _showErrorSnackBar('No account found with this mobile number.');
+          setState(() => _isLoading = false);
+          return;
         }
 
         final userData = querySnapshot.docs.first.data();
         emailToAuth = (userData['email'] ?? '').toString().trim();
 
         if (emailToAuth.isEmpty) {
-          throw FirebaseAuthException(
-            code: 'invalid-user-data',
-            message: 'This account has no registered email address.',
-          );
+          _showErrorSnackBar('This account has no registered email address.');
+          setState(() => _isLoading = false);
+          return;
         }
       }
 
-      // --- FIX: Force lowercase and trim email to prevent mobile auto-capitalization errors ---
       final String finalEmail = emailToAuth.toLowerCase().trim();
       final String finalPassword = _passwordController.text.trim();
 
@@ -121,10 +118,9 @@ class _LoginScreenState extends State<LoginScreen>
       final user = credential.user;
 
       if (user == null) {
-        throw FirebaseAuthException(
-          code: 'user-not-found',
-          message: 'Unable to retrieve your account. Please try again.',
-        );
+        _showErrorSnackBar('Unable to retrieve your account. Please try again.');
+        setState(() => _isLoading = false);
+        return;
       }
 
       // --- EMAIL VERIFICATION GUARD ---
@@ -176,9 +172,18 @@ class _LoginScreenState extends State<LoginScreen>
             (route) => false,
       );
     } on FirebaseAuthException catch (e) {
-      _showErrorSnackBar(
-        e.message ?? 'Authentication failed. Please verify your credentials.',
-      );
+      // Specific error handling for email / password issues
+      String errorMessage = 'Authentication failed. Please verify your credentials.';
+
+      if (e.code == 'user-not-found' || e.code == 'invalid-email') {
+        errorMessage = 'The email address or mobile number is incorrect or does not exist.';
+      } else if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
+        errorMessage = 'The password you entered is incorrect.';
+      } else if (e.code == 'user-disabled') {
+        errorMessage = 'This account has been disabled by administrators.';
+      }
+
+      _showErrorSnackBar(errorMessage);
     } on FirebaseException catch (e) {
       debugPrint('Firebase login error: ${e.code} - ${e.message}');
       _showErrorSnackBar(

@@ -19,10 +19,8 @@ class _IDCameraScreenState extends State<IDCameraScreen> with SingleTickerProvid
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
 
-  // Ultra-Rich Modern Agricultural Color Suite
   final Color _deepForestGreen = const Color(0xFF0A3622);
   final Color _vibrantGreen = const Color(0xFF1B5E20);
-  final Color _softGreenTint = const Color(0xFFE8F5E9);
 
   @override
   void initState() {
@@ -61,7 +59,8 @@ class _IDCameraScreenState extends State<IDCameraScreen> with SingleTickerProvid
   Future<bool> _isImageQualityAcceptable(File imageFile) async {
     try {
       final int fileSize = await imageFile.length();
-      if (fileSize < 80000) {
+      // Strict anti-blur threshold check (rejects overly compressed or blurry frames)
+      if (fileSize < 120000) {
         return false;
       }
       return true;
@@ -140,15 +139,8 @@ class _IDCameraScreenState extends State<IDCameraScreen> with SingleTickerProvid
         opacity: _fadeAnimation,
         child: Stack(
           children: [
-            // Camera Preview
             Positioned.fill(child: CameraPreview(_controller)),
-
-            // Dimmed backdrop overlay
-            Container(
-              color: Colors.black.withValues(alpha: 0.5),
-            ),
-
-            // Top Status Instruction Banner
+            Container(color: Colors.black.withValues(alpha: 0.5)),
             Positioned(
               top: 60,
               left: 20,
@@ -178,8 +170,6 @@ class _IDCameraScreenState extends State<IDCameraScreen> with SingleTickerProvid
                 ),
               ),
             ),
-
-            // Center Dynamic Guide Frame Box (Cleaned up neon glow & fixed brackets)
             Center(
               child: Container(
                 width: 330,
@@ -187,20 +177,9 @@ class _IDCameraScreenState extends State<IDCameraScreen> with SingleTickerProvid
                 decoration: BoxDecoration(
                   border: Border.all(color: activeColor, width: 2),
                   borderRadius: BorderRadius.circular(20),
-                  // Removed the boxShadow that was causing the neon glow effect
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(top: 0, left: 0, child: _buildCorner(activeColor, isTop: true, isLeft: true)),
-                    Positioned(top: 0, right: 0, child: _buildCorner(activeColor, isTop: true, isLeft: false)),
-                    Positioned(bottom: 0, left: 0, child: _buildCorner(activeColor, isTop: false, isLeft: true)),
-                    Positioned(bottom: 0, right: 0, child: _buildCorner(activeColor, isTop: false, isLeft: false)),
-                  ],
                 ),
               ),
             ),
-
-            // Bottom Action Panel
             Positioned(
               bottom: 40,
               left: 20,
@@ -241,22 +220,6 @@ class _IDCameraScreenState extends State<IDCameraScreen> with SingleTickerProvid
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  // Updated to dynamically draw the correct L-bracket for each specific corner
-  Widget _buildCorner(Color color, {required bool isTop, required bool isLeft}) {
-    return Container(
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        // border: Border(
-        //   top: isTop ? BorderSide(color: color, width: 4) : BorderSide.none,
-        //   bottom: !isTop ? BorderSide(color: color, width: 4) : BorderSide.none,
-        //   left: isLeft ? BorderSide(color: color, width: 4) : BorderSide.none,
-        //   right: !isLeft ? BorderSide(color: color, width: 4) : BorderSide.none,
-        // ),
       ),
     );
   }

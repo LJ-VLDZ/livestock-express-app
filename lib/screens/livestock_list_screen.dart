@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'details_screen.dart';
-import 'notifications_screen.dart'; // Replaced cart_screen with notifications_screen
+import 'notifications_screen.dart';
 
 class LivestockListScreen extends StatefulWidget {
   const LivestockListScreen({super.key});
@@ -63,7 +63,6 @@ class _LivestockListScreenState extends State<LivestockListScreen> with SingleTi
           bottom: false,
           child: Column(
             children: [
-              // 1. FIXED HEADER (Static at the top)
               Container(
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                 decoration: BoxDecoration(
@@ -117,7 +116,6 @@ class _LivestockListScreenState extends State<LivestockListScreen> with SingleTi
                       style: TextStyle(color: Colors.white, fontSize: 28, height: 1.1, fontWeight: FontWeight.w900, letterSpacing: -0.5),
                     ),
                     const SizedBox(height: 18),
-                    // Search and Notification Bell Row
                     Row(
                       children: [
                         Expanded(
@@ -140,7 +138,6 @@ class _LivestockListScreenState extends State<LivestockListScreen> with SingleTi
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // Notification Bell Button with Real-time Unread Badge Stream
                         Container(
                           height: 50,
                           width: 50,
@@ -195,7 +192,6 @@ class _LivestockListScreenState extends State<LivestockListScreen> with SingleTi
                 ),
               ),
 
-              // 2. CATEGORY HORIZONTAL CHIPS
               Container(
                 height: 70,
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -233,7 +229,6 @@ class _LivestockListScreenState extends State<LivestockListScreen> with SingleTi
                 ),
               ),
 
-              // 3. SCROLLING BODY WITH ENHANCED LOADING STATE
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance.collection('livestock').snapshots(),
@@ -277,7 +272,7 @@ class _LivestockListScreenState extends State<LivestockListScreen> with SingleTi
                       padding: const EdgeInsets.fromLTRB(20, 10, 20, 110),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
-                        childAspectRatio: 0.62,
+                        childAspectRatio: 0.58,
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
                       ),
@@ -288,6 +283,7 @@ class _LivestockListScreenState extends State<LivestockListScreen> with SingleTi
                         final String imageUrl = item['imageUrl'] ?? '';
                         final bool isSellerVerified = item['isVerifiedSeller'] ?? false;
                         final String livestockName = item['livestock_name'] ?? item['name'] ?? "Unknown";
+                        final String saleType = item['sale_type'] ?? 'per_head';
 
                         return Material(
                           color: Colors.white,
@@ -336,7 +332,7 @@ class _LivestockListScreenState extends State<LivestockListScreen> with SingleTi
                                     ),
                                   ),
                                   Padding(
-                                    padding: const EdgeInsets.all(16.0),
+                                    padding: const EdgeInsets.all(14.0),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
@@ -345,7 +341,7 @@ class _LivestockListScreenState extends State<LivestockListScreen> with SingleTi
                                             Expanded(
                                               child: Text(
                                                 livestockName,
-                                                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: _deepForestGreen),
+                                                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: _deepForestGreen),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
@@ -354,7 +350,17 @@ class _LivestockListScreenState extends State<LivestockListScreen> with SingleTi
                                               const Icon(Icons.verified_rounded, color: Colors.blue, size: 16),
                                           ],
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: 6),
+                                        if (saleType == 'bulk')
+                                          Container(
+                                            margin: const EdgeInsets.only(bottom: 6),
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(color: Colors.amber.shade100, borderRadius: BorderRadius.circular(6)),
+                                            child: Text(
+                                              "Qty: ${item['available_quantity'] ?? 1} units",
+                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.amber.shade900),
+                                            ),
+                                          ),
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                           decoration: BoxDecoration(color: _softGreenTint, borderRadius: BorderRadius.circular(10)),
@@ -389,7 +395,7 @@ class _LivestockListScreenState extends State<LivestockListScreen> with SingleTi
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 110),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.62,
+        childAspectRatio: 0.58,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
