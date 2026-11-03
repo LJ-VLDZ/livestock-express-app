@@ -44,7 +44,8 @@ class LivestockApp extends StatelessWidget {
         primarySwatch: Colors.green,
         useMaterial3: true,
       ),
-      initialRoute: showOnboarding ? '/onboarding' : '/',
+      // If onboarding is needed, start at /onboarding, otherwise go straight to the dashboard (/home)
+      initialRoute: showOnboarding ? '/onboarding' : '/home',
       routes: {
         '/onboarding': (context) => const OnboardingScreen(),
         '/': (context) => const SplashScreen(),

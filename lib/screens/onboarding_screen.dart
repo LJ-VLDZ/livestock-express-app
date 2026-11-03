@@ -10,7 +10,8 @@ class OnboardingScreen extends StatelessWidget {
     await prefs.setBool('show_onboarding', false);
 
     if (context.mounted) {
-      Navigator.pushReplacementNamed(context, '/');
+      // Transition directly to the dashboard home screen
+      Navigator.pushReplacementNamed(context, '/home');
     }
   }
 
