@@ -47,13 +47,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     if (!mounted) return;
 
-    User? currentUser = FirebaseAuth.instance.currentUser;
-
-    if (currentUser != null) {
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      Navigator.pushReplacementNamed(context, '/login');
-    }
+    // Allow all users (both guests and logged-in users) to enter the marketplace dashboard directly.
+    // Restricted features like posting listings or messaging will trigger a login prompt dialog instead.
+    Navigator.pushReplacementNamed(context, '/home');
   }
 
   @override
