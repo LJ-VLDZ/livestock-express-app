@@ -175,7 +175,7 @@ class _MessagesScreenState extends State<MessagesScreen> with SingleTickerProvid
                           future: FirebaseFirestore.instance.collection('users').doc(otherUserId).get(),
                           builder: (context, userSnapshot) {
                             String otherUserName = "Trader";
-                            if (userSnapshot.hasData && userSnapshot.data!.exists) {
+                            if (userSnapshot.hasData && userSnapshot.data != null && userSnapshot.data!.exists) {
                               final userData = userSnapshot.data!.data() as Map<String, dynamic>;
                               otherUserName = userData['name'] ?? userData['fullName'] ?? userData['email'] ?? "Trader";
                             }

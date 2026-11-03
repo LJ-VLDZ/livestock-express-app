@@ -181,7 +181,7 @@ class _UploadIDScreenState extends State<UploadIDScreen> with SingleTickerProvid
         'idFrontUrl': frontUrl,
         'idBackUrl': backUrl,
         'faceUrl': faceUrl,
-        'profileImageUrl': faceUrl, // Set face capture as profile picture
+        'profileImageUrl': faceUrl,
         'idUrl': frontUrl,
         'idType': widget.idType,
         'verificationStatus': 'pending',

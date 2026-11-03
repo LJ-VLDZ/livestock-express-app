@@ -151,10 +151,16 @@ class _LivestockListScreenState extends State<LivestockListScreen> with SingleTi
                               Center(
                                 child: IconButton(
                                   icon: Icon(Icons.notifications_outlined, color: _deepForestGreen, size: 22),
-                                  onPressed: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (_) => NotificationsScreen()),
-                                  ),
+                                  onPressed: () {
+                                    if (user == null) {
+                                      _showLoginPrompt("Please log in to view notifications.");
+                                      return;
+                                    }
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => NotificationsScreen()),
+                                    );
+                                  },
                                 ),
                               ),
                               if (user != null)
@@ -389,6 +395,35 @@ class _LivestockListScreenState extends State<LivestockListScreen> with SingleTi
     );
   }
 
+  void _showLoginPrompt(String msg) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Account Required", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0A3622))),
+        content: Text(msg),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _vibrantGreen,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/login');
+            },
+            child: const Text("Log In / Register", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLoadingGrid() {
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
@@ -455,5 +490,6 @@ class _LivestockListScreenState extends State<LivestockListScreen> with SingleTi
     );
   }
 
+  // FIXED: Removed invalid 'const' keyword causing the compilation error on line 161
   Widget _placeholderIcon() => Container(color: Colors.green.shade50, child: Icon(Icons.pets_rounded, size: 36, color: _vibrantGreen.withOpacity(0.5)));
 }

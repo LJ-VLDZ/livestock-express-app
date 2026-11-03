@@ -36,7 +36,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _checkVerificationAndAddListing() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      _showLoginPromptDialog("Log in or register to post livestock listings and trade across Alaminos City.");
+      return;
+    }
 
     try {
       final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
@@ -98,19 +101,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  void _showLoginPromptDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Account Required", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0A3622))),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1B5E20),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/login');
+            },
+            child: const Text("Log In / Register", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FBF8),
       body: Stack(
         children: [
-          // Current Active Screen
           IndexedStack(
             index: _currentIndex,
             children: _screens,
           ),
+
+          // Guest Mode Header Login / Signup Bar (Top Right)
+          if (user == null)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 10,
+              right: 20,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0A3622),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  elevation: 4,
+                ),
+                onPressed: () => Navigator.pushNamed(context, '/login'),
+                child: const Text("Log In / Sign Up", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+            ),
 
           // Custom Floating Bottom Navigation Bar
           Positioned(
@@ -143,7 +193,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 60), // Center gap for FAB
+                  const SizedBox(width: 60),
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -197,7 +247,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
     final isSelected = _currentIndex == index;
     return InkWell(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () {
+        if (index == 1 || index == 2) {
+          final user = FirebaseAuth.instance.currentUser;
+          if (user == null) {
+            _showLoginPromptDialog("Please log in or register to access $label.");
+            return;
+          }
+        }
+        setState(() => _currentIndex = index);
+      },
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),

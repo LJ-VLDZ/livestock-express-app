@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 
 // Services
@@ -12,6 +13,7 @@ import 'package:livestock_app/screens/login_screen.dart';
 import 'package:livestock_app/screens/sign_up_screen.dart';
 import 'package:livestock_app/screens/reset_password_screen.dart';
 import 'package:livestock_app/screens/splash_screen.dart';
+import 'package:livestock_app/screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,14 +22,18 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Initialize FCM Push Notifications for real-time ring alerts
   await PushNotificationService.initialize();
 
-  runApp(const LivestockApp());
+  // Check if it's the first time opening the app
+  final prefs = await SharedPreferences.getInstance();
+  final bool showOnboarding = prefs.getBool('show_onboarding') ?? true;
+
+  runApp(LivestockApp(showOnboarding: showOnboarding));
 }
 
 class LivestockApp extends StatelessWidget {
-  const LivestockApp({super.key});
+  final bool showOnboarding;
+  const LivestockApp({super.key, required this.showOnboarding});
 
   @override
   Widget build(BuildContext context) {
@@ -38,9 +44,9 @@ class LivestockApp extends StatelessWidget {
         primarySwatch: Colors.green,
         useMaterial3: true,
       ),
-      // Start at the Splash Screen route '/'
-      initialRoute: '/',
+      initialRoute: showOnboarding ? '/onboarding' : '/',
       routes: {
+        '/onboarding': (context) => const OnboardingScreen(),
         '/': (context) => const SplashScreen(),
         '/home': (context) => const DashboardScreen(),
         '/login': (context) => const LoginScreen(),

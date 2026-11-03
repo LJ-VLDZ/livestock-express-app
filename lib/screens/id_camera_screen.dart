@@ -13,7 +13,7 @@ class IDCameraScreen extends StatefulWidget {
 class _IDCameraScreenState extends State<IDCameraScreen> with SingleTickerProviderStateMixin {
   late CameraController _controller;
   bool _isProcessing = false;
-  bool _isAligned = true;
+  bool _isAligned = false; // Start false until stable check
   String _statusMessage = "Position and align your ID inside the frame";
 
   late AnimationController _animController;
@@ -43,7 +43,11 @@ class _IDCameraScreenState extends State<IDCameraScreen> with SingleTickerProvid
     );
     try {
       await _controller.initialize();
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {
+          _isAligned = true; // Ready for capture
+        });
+      }
     } catch (e) {
       debugPrint("Camera initialization error: $e");
     }
@@ -59,8 +63,8 @@ class _IDCameraScreenState extends State<IDCameraScreen> with SingleTickerProvid
   Future<bool> _isImageQualityAcceptable(File imageFile) async {
     try {
       final int fileSize = await imageFile.length();
-      // Strict anti-blur threshold check (rejects overly compressed or blurry frames)
-      if (fileSize < 120000) {
+      // Strict anti-blur & detail threshold check (rejects blurry or low-detail shots)
+      if (fileSize < 150000) {
         return false;
       }
       return true;
@@ -75,7 +79,6 @@ class _IDCameraScreenState extends State<IDCameraScreen> with SingleTickerProvid
     setState(() {
       _isProcessing = true;
       _statusMessage = "Analyzing clarity & blur levels...";
-      _isAligned = false;
     });
 
     try {
@@ -87,10 +90,9 @@ class _IDCameraScreenState extends State<IDCameraScreen> with SingleTickerProvid
         if (mounted) {
           setState(() {
             _isProcessing = false;
-            _statusMessage = "Image too blurry! Hold steady and retake.";
-            _isAligned = false;
+            _statusMessage = "Image too blurry or unclear! Hold steady and retake.";
           });
-          _showSnackBar("ID rejected: Image is blurry or unclear. Please retry.", isError: true);
+          _showSnackBar("ID rejected: Image is blurry. Please fill the frame and retry.", isError: true);
         }
         return;
       }
@@ -104,7 +106,6 @@ class _IDCameraScreenState extends State<IDCameraScreen> with SingleTickerProvid
         setState(() {
           _isProcessing = false;
           _statusMessage = "Capture error occurred. Try again.";
-          _isAligned = false;
         });
       }
     }
@@ -155,7 +156,7 @@ class _IDCameraScreenState extends State<IDCameraScreen> with SingleTickerProvid
                 child: Row(
                   children: [
                     Icon(
-                      _isProcessing ? Icons.hourglass_top_rounded : (_isAligned ? Icons.check_circle_outline_rounded : Icons.warning_amber_rounded),
+                      _isProcessing ? Icons.hourglass_top_rounded : Icons.info_outline_rounded,
                       color: activeColor,
                       size: 20,
                     ),
@@ -186,9 +187,9 @@ class _IDCameraScreenState extends State<IDCameraScreen> with SingleTickerProvid
               right: 20,
               child: Column(
                 children: [
-                  Text(
-                    _isAligned ? "ID properly aligned. Tap below to capture." : "Please fit your ID inside the box.",
-                    style: TextStyle(color: _isAligned ? Colors.greenAccent : Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                  const Text(
+                    "Fit your valid ID inside the box and hold steady.",
+                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(

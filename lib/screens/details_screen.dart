@@ -18,8 +18,6 @@ class DetailsScreen extends StatefulWidget {
 }
 
 class _DetailsScreenState extends State<DetailsScreen> with SingleTickerProviderStateMixin {
-  final String? _currentUserId = FirebaseAuth.instance.currentUser?.uid;
-
   VideoPlayerController? _videoController;
   bool _isVideoInitialized = false;
   int _selectedImageIndex = 0;
@@ -64,7 +62,12 @@ class _DetailsScreenState extends State<DetailsScreen> with SingleTickerProvider
 
   Future<void> _startChatWithSeller() async {
     final User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+
+    // Prompt login if user is browsing as guest
+    if (user == null) {
+      _showLoginPromptDialog();
+      return;
+    }
 
     final String sellerId = widget.item['seller_id'] ?? '';
     if (user.uid == sellerId) {
@@ -125,6 +128,35 @@ class _DetailsScreenState extends State<DetailsScreen> with SingleTickerProvider
         ),
       );
     }
+  }
+
+  void _showLoginPromptDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Account Required", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0A3622))),
+        content: const Text("You need to log in or register an account before you can message sellers or make offers."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _vibrantGreen,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/login');
+            },
+            child: const Text("Log In / Register", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _deleteListing(BuildContext context) async {
@@ -205,7 +237,8 @@ class _DetailsScreenState extends State<DetailsScreen> with SingleTickerProvider
     final String description = widget.item['description'] ?? "";
 
     final String listingSellerId = widget.item['seller_id'] ?? "";
-    final bool isOwner = _currentUserId != null && _currentUserId == listingSellerId;
+    final String? currentUid = FirebaseAuth.instance.currentUser?.uid;
+    final bool isOwner = currentUid != null && currentUid == listingSellerId;
     final String saleType = widget.item['sale_type'] ?? 'per_head';
 
     final List<dynamic> rawImageUrls = widget.item['imageUrls'] ?? [];
@@ -399,7 +432,6 @@ class _DetailsScreenState extends State<DetailsScreen> with SingleTickerProvider
               ),
               const SizedBox(height: 20),
 
-              // Seller Storefront Card (Disabled for own listing)
               InkWell(
                 onTap: () {
                   if (listingSellerId.isNotEmpty && !isOwner) {
