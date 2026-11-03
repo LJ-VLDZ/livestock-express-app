@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,7 +12,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
 
-  // Ultra-Rich Modern Agricultural Color Suite
   final Color _deepForestGreen = const Color(0xFF0A3622);
   final Color _vibrantGreen = const Color(0xFF1B5E20);
 
@@ -43,12 +41,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   Future<void> _navigateToNextScreen() async {
-    await Future.delayed(const Duration(seconds: 3));
+    // Show splash animation for 2.5 seconds before entering the marketplace
+    await Future.delayed(const Duration(milliseconds: 2500));
 
     if (!mounted) return;
 
-    // Allow all users (both guests and logged-in users) to enter the marketplace dashboard directly.
-    // Restricted features like posting listings or messaging will trigger a login prompt dialog instead.
+    // Navigate straight to the dashboard/marketplace in guest mode
     Navigator.pushReplacementNamed(context, '/home');
   }
 
@@ -73,7 +71,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // App Logo Asset Container
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
