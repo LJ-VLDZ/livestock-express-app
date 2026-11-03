@@ -19,141 +19,159 @@
         }
     </style>
 </head>
-<body class="bg-[#F1F6F2] text-slate-800 antialiased selection:bg-emerald-500 selection:text-white">
+<body class="bg-[#F1F6F2] text-slate-800 antialiased selection:bg-emerald-500 selection:text-white overflow-x-hidden">
 
 <!-- Navigation Bar -->
 <header class="sticky top-0 z-50 bg-[#062314]/95 backdrop-blur-md text-white shadow-lg border-b border-emerald-900/40">
-    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
-            <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-[#134E27] flex items-center justify-center font-extrabold text-lg text-white shadow-inner">LE</div>
+            <img src="assets/images/app_logo.png" alt="Livestock Express Logo" class="h-9 w-9 sm:h-10 sm:w-10 rounded-xl object-cover shadow-inner bg-emerald-900">
             <div>
-                <h1 class="text-base font-extrabold tracking-tight">Livestock Express</h1>
-                <p class="text-[10px] uppercase tracking-wider text-emerald-300 font-medium">Alaminos City, Pangasinan</p>
+                <h1 class="text-sm sm:text-base font-extrabold tracking-tight">Livestock Express</h1>
+                <p class="text-[9px] sm:text-[10px] uppercase tracking-wider text-emerald-300 font-medium">Alaminos City, Pangasinan</p>
             </div>
         </div>
+
+        <!-- Desktop Nav -->
         <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-emerald-100">
             <a href="#features" class="hover:text-emerald-300 transition">Features</a>
-            <a href="#workflow" class="hover:text-emerald-300 transition">Inspection Workflow</a>
+            <a href="#workflow" class="hover:text-emerald-300 transition">Workflow</a>
             <a href="#faq" class="hover:text-emerald-300 transition">FAQ</a>
             <a href="#contact" class="hover:text-emerald-300 transition">Contact</a>
         </nav>
-        <a href="#download" class="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-500 transition transform hover:scale-105">Download App</a>
+
+        <div class="flex items-center gap-3">
+            <a href="#download" class="hidden sm:inline-flex rounded-xl bg-emerald-600 px-4 sm:px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-500 transition transform hover:scale-105">Download App</a>
+
+            <!-- Mobile Menu Button -->
+            <button id="menu-btn" class="md:hidden text-emerald-200 focus:outline-none p-1">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile Dropdown Menu -->
+    <div id="mobile-menu" class="hidden md:hidden bg-[#062314] border-t border-emerald-900 px-6 py-4 space-y-3">
+        <a href="#features" class="block text-emerald-100 font-medium hover:text-emerald-300 transition">Features</a>
+        <a href="#workflow" class="block text-emerald-100 font-medium hover:text-emerald-300 transition">Workflow</a>
+        <a href="#faq" class="block text-emerald-100 font-medium hover:text-emerald-300 transition">FAQ</a>
+        <a href="#contact" class="block text-emerald-100 font-medium hover:text-emerald-300 transition">Contact</a>
+        <a href="#download" class="block text-center rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-md">Download APK</a>
     </div>
 </header>
 
 <!-- Hero Section -->
-<section class="relative overflow-hidden bg-gradient-to-br from-[#062314] via-[#0A3622] to-[#134E27] text-white py-28 px-6">
+<section class="relative overflow-hidden bg-gradient-to-br from-[#062314] via-[#0A3622] to-[#134E27] text-white py-20 sm:py-28 px-4 sm:px-6">
     <div class="absolute inset-0 opacity-15 mix-blend-overlay bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&q=80&w=1920');"></div>
-    <div class="max-w-5xl mx-auto relative z-10 text-center space-y-8 animate-fade-in">
+    <div class="max-w-5xl mx-auto relative z-10 text-center space-y-6 sm:space-y-8 animate-fade-in">
 
         <!-- App Logo Branding Badge -->
-        <div class="inline-flex items-center gap-3 bg-emerald-950/90 border border-emerald-500/40 px-5 py-2.5 rounded-full shadow-lg">
-            <div class="h-7 w-7 rounded-lg bg-emerald-500 flex items-center justify-center font-black text-white text-xs shadow">LE</div>
-            <span class="text-xs font-bold tracking-wider text-emerald-200 uppercase">Official Municipal Biosecurity & Livestock Marketplace</span>
+        <div class="inline-flex items-center gap-2 sm:gap-3 bg-emerald-950/90 border border-emerald-500/40 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-lg max-w-full text-center">
+            <img src="assets/images/app_logo.png" alt="Logo" class="h-6 w-6 sm:h-7 sm:w-7 rounded-lg object-cover shadow flex-shrink-0">
+            <span class="text-[11px] sm:text-xs font-bold tracking-tight sm:tracking-wider text-emerald-200 uppercase truncate">Official Municipal Biosecurity & Livestock Marketplace</span>
         </div>
 
-        <h2 class="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight">
+        <h2 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
             Secure Livestock Trading & Live Tracking Across Alaminos City
         </h2>
-        <p class="text-lg text-emerald-100 max-w-2xl mx-auto leading-relaxed font-normal">
+        <p class="text-sm sm:text-lg text-emerald-100 max-w-2xl mx-auto leading-relaxed font-normal px-2">
             Empowering farmers, buyers, and the Alaminos City Veterinary Office with real-time GPS delivery tracking, strict anti-blur ID verification, and transparent trade workflows.
         </p>
-        <div id="download" class="pt-4 flex flex-col sm:flex-row justify-center gap-4">
-            <a href="https://github.com/LJ-VLDZ/livestock-express-app/releases/download/v1.0.0/app-release.apk" class="inline-flex items-center justify-center gap-3 rounded-2xl bg-white px-8 py-4 text-sm font-extrabold text-[#062314] shadow-2xl hover:bg-emerald-50 transition transform hover:-translate-y-1">
-                <svg class="h-5 w-5 text-emerald-700" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        <div id="download" class="pt-2 sm:pt-4 flex flex-col sm:flex-row justify-center gap-4 px-4">
+            <a href="https://github.com/LJ-VLDZ/livestock-express-app/releases/download/v1.0.0/app-release.apk" class="inline-flex items-center justify-center gap-3 rounded-2xl bg-white px-6 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-extrabold text-[#062314] shadow-2xl hover:bg-emerald-50 transition transform hover:-translate-y-1">
+                <svg class="h-5 w-5 text-emerald-700 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
                 Download Android APK (.apk)
             </a>
         </div>
-        <p class="text-xs text-emerald-300/80 font-medium">Compatible with Android 8.0 and above • Tested on TECNO Mobile Devices</p>
+        <p class="text-[11px] sm:text-xs text-emerald-300/80 font-medium">Compatible with Android 8.0 and above • Tested on TECNO Mobile Devices</p>
     </div>
 </section>
 
 <!-- Visual Feature Highlights -->
-<section id="features" class="max-w-7xl mx-auto py-24 px-6">
-    <div class="text-center space-y-3 mb-16">
+<section id="features" class="max-w-7xl mx-auto py-16 sm:py-24 px-4 sm:px-6">
+    <div class="text-center space-y-3 mb-12 sm:mb-16">
         <p class="text-xs font-bold uppercase tracking-widest text-emerald-700">Platform Capabilities</p>
-        <h3 class="text-3xl font-extrabold text-slate-900">Engineered for Modern Agriculture</h3>
-        <p class="text-sm text-slate-600 max-w-xl mx-auto">Built specifically to streamline trading workflows across all 39 barangays of Alaminos City.</p>
+        <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Engineered for Modern Agriculture</h3>
+        <p class="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto px-2">Built specifically to streamline trading workflows across all 39 barangays of Alaminos City.</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <!-- Feature 1 -->
-        <div class="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl transition duration-300 transform hover:-translate-y-1">
-            <div class="h-48 overflow-hidden bg-emerald-50">
-                <img src="https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&q=80&w=800" alt="Livestock Market" class="w-full h-full object-cover transition duration-500 hover:scale-105">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+        <div class="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl transition duration-300">
+            <div class="h-44 sm:h-48 overflow-hidden bg-emerald-50">
+                <img src="https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&q=80&w=800" alt="Livestock Market" class="w-full h-full object-cover">
             </div>
-            <div class="p-8 space-y-3">
-                <div class="h-10 w-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">01</div>
-                <h4 class="text-xl font-bold text-slate-900">Verified Marketplace</h4>
-                <p class="text-sm text-slate-600 leading-relaxed">Browse cattle, carabao, swine, and poultry listings with guest browsing and seamless trader interactions.</p>
-            </div>
-        </div>
-
-        <!-- Feature 2 (Updated with strict ID & image quality checks) -->
-        <div class="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl transition duration-300 transform hover:-translate-y-1">
-            <div class="h-48 overflow-hidden bg-emerald-50">
-                <img src="https://images.unsplash.com/photo-1527153857715-3908f2ae5e61?auto=format&fit=crop&q=80&w=800" alt="Biosecurity Inspection" class="w-full h-full object-cover transition duration-500 hover:scale-105">
-            </div>
-            <div class="p-8 space-y-3">
-                <div class="h-10 w-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">02</div>
-                <h4 class="text-xl font-bold text-slate-900">Strict ID & Biosecurity Checks</h4>
-                <p class="text-sm text-slate-600 leading-relaxed">Ensures secure trading through automated image quality and blur checks during ID capture, backed by municipal inspection approvals.</p>
+            <div class="p-6 sm:p-8 space-y-3">
+                <div class="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm">01</div>
+                <h4 class="text-lg sm:text-xl font-bold text-slate-900">Verified Marketplace</h4>
+                <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">Browse cattle, carabao, swine, and poultry listings with guest browsing and seamless trader interactions.</p>
             </div>
         </div>
 
-        <!-- Feature 3 -->
-        <div class="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl transition duration-300 transform hover:-translate-y-1">
-            <div class="h-48 overflow-hidden bg-emerald-50">
-                <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=800" alt="GPS Tracking" class="w-full h-full object-cover transition duration-500 hover:scale-105">
+        <div class="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl transition duration-300">
+            <div class="h-44 sm:h-48 overflow-hidden bg-emerald-50">
+                <img src="https://images.unsplash.com/photo-1527153857715-3908f2ae5e61?auto=format&fit=crop&q=80&w=800" alt="Biosecurity Inspection" class="w-full h-full object-cover">
             </div>
-            <div class="p-8 space-y-3">
-                <div class="h-10 w-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">03</div>
-                <h4 class="text-xl font-bold text-slate-900">Live GPS Tracking</h4>
-                <p class="text-sm text-slate-600 leading-relaxed">Administrators track live delivery shipments via interactive road polylines on Google Maps directly from the field.</p>
+            <div class="p-6 sm:p-8 space-y-3">
+                <div class="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm">02</div>
+                <h4 class="text-lg sm:text-xl font-bold text-slate-900">Strict ID & Biosecurity Checks</h4>
+                <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">Ensures secure trading through automated image quality and blur checks during ID capture, backed by municipal inspection approvals.</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl transition duration-300">
+            <div class="h-44 sm:h-48 overflow-hidden bg-emerald-50">
+                <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=800" alt="GPS Tracking" class="w-full h-full object-cover">
+            </div>
+            <div class="p-6 sm:p-8 space-y-3">
+                <div class="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm">03</div>
+                <h4 class="text-lg sm:text-xl font-bold text-slate-900">Live GPS Tracking</h4>
+                <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">Administrators track live delivery shipments via interactive road polylines on Google Maps directly from the field.</p>
             </div>
         </div>
     </div>
 </section>
 
 <!-- FAQs Section -->
-<section id="faq" class="max-w-4xl mx-auto py-16 px-6">
-    <div class="text-center space-y-3 mb-16">
+<section id="faq" class="max-w-4xl mx-auto py-12 sm:py-16 px-4 sm:px-6">
+    <div class="text-center space-y-3 mb-12 sm:mb-16">
         <p class="text-xs font-bold uppercase tracking-widest text-emerald-700">Got Questions?</p>
-        <h3 class="text-3xl font-extrabold text-slate-900">Frequently Asked Questions</h3>
-        <p class="text-sm text-slate-600">Everything you need to know about using Livestock Express.</p>
+        <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Frequently Asked Questions</h3>
+        <p class="text-xs sm:text-sm text-slate-600">Everything you need to know about using Livestock Express.</p>
     </div>
 
     <div class="space-y-4">
-        <div class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200/80">
-            <h4 class="font-bold text-slate-900 text-base mb-2">1. How do I install the APK on my mobile phone?</h4>
-            <p class="text-sm text-slate-600 leading-relaxed">Click the download button above to save the `.apk` file to your phone. Tap the downloaded file to install. If prompted by Android, allow installation from unknown sources for this browser or file manager.</p>
+        <div class="rounded-2xl bg-white p-5 sm:p-6 shadow-sm border border-slate-200/80">
+            <h4 class="font-bold text-slate-900 text-sm sm:text-base mb-2">1. How do I install the APK on my mobile phone?</h4>
+            <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">Click the download button above to save the `.apk` file to your phone. Tap the downloaded file to install. If prompted by Android, allow installation from unknown sources for this browser or file manager.</p>
         </div>
 
-        <div class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200/80">
-            <h4 class="font-bold text-slate-900 text-base mb-2">2. Why does the ID verification check for blur and image quality?</h4>
-            <p class="text-sm text-slate-600 leading-relaxed">To maintain absolute transparency and prevent fraudulent registrations across Alaminos City, our capture system evaluates image clarity and blur standards before accepting identification documents.</p>
+        <div class="rounded-2xl bg-white p-5 sm:p-6 shadow-sm border border-slate-200/80">
+            <h4 class="font-bold text-slate-900 text-sm sm:text-base mb-2">2. Why does the ID verification check for blur and image quality?</h4>
+            <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">To maintain absolute transparency and prevent fraudulent registrations across Alaminos City, our capture system evaluates image clarity and blur standards before accepting identification documents.</p>
         </div>
 
-        <div class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200/80">
-            <h4 class="font-bold text-slate-900 text-base mb-2">3. How does the live GPS tracking work?</h4>
-            <p class="text-sm text-slate-600 leading-relaxed">Once the inspection is approved and the seller taps "Dispatch", the mobile app securely streams the seller's live GPS coordinates to Firestore. The admin panel at the municipal office renders these updates on a real-time radar map.</p>
+        <div class="rounded-2xl bg-white p-5 sm:p-6 shadow-sm border border-slate-200/80">
+            <h4 class="font-bold text-slate-900 text-sm sm:text-base mb-2">3. How does the live GPS tracking work?</h4>
+            <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">Once the inspection is approved and the seller taps "Dispatch", the mobile app securely streams the seller's live GPS coordinates to Firestore. The admin panel at the municipal office renders these updates on a real-time radar map.</p>
         </div>
 
-        <div class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200/80">
-            <h4 class="font-bold text-slate-900 text-base mb-2">4. Who can use Livestock Express?</h4>
-            <p class="text-sm text-slate-600 leading-relaxed">The platform is built for verified local livestock farmers, registered buyers across Pangasinan, and administrators at the Alaminos City Veterinary Office.</p>
+        <div class="rounded-2xl bg-white p-5 sm:p-6 shadow-sm border border-slate-200/80">
+            <h4 class="font-bold text-slate-900 text-sm sm:text-base mb-2">4. Who can use Livestock Express v1.0.0?</h4>
+            <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">The platform is built for verified local livestock farmers, registered buyers across Pangasinan, and administrators at the Alaminos City Veterinary Office.</p>
         </div>
     </div>
 </section>
 
 <!-- Contact Section -->
-<section id="contact" class="max-w-4xl mx-auto py-16 px-6 text-center">
-    <div class="bg-white rounded-3xl p-10 border border-slate-200/80 shadow-sm space-y-4">
+<section id="contact" class="max-w-4xl mx-auto py-12 sm:py-16 px-4 sm:px-6 text-center">
+    <div class="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/80 shadow-sm space-y-4">
         <span class="text-xs font-bold uppercase tracking-widest text-emerald-700">Get in Touch</span>
-        <h3 class="text-2xl font-extrabold text-slate-900">Need Support or Inquiries?</h3>
-        <p class="text-sm text-slate-600 max-w-md mx-auto">For assistance, municipal coordination, or technical support regarding livestock transactions, reach out to us at:</p>
-        <div class="pt-2">
-            <a href="mailto:livestock.express.app.@gmail.com" class="inline-flex items-center gap-2 text-emerald-700 font-bold hover:underline text-base bg-emerald-50 px-6 py-3 rounded-xl border border-emerald-200">
+        <h3 class="text-xl sm:text-2xl font-extrabold text-slate-900">Need Support or Inquiries?</h3>
+        <p class="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">For assistance, municipal coordination, or technical support regarding livestock transactions, reach out to us at:</p>
+        <div class="pt-2 overflow-x-auto">
+            <a href="mailto:livestock.express.app.@gmail.com" class="inline-flex items-center gap-2 text-emerald-700 font-bold hover:underline text-xs sm:text-base bg-emerald-50 px-4 sm:px-6 py-3 rounded-xl border border-emerald-200">
                 📧 livestock.express.app.@gmail.com
             </a>
         </div>
@@ -161,15 +179,30 @@
 </section>
 
 <!-- Footer -->
-<footer class="bg-[#062314] text-white py-12 px-6 text-center text-xs text-emerald-300/80 border-t border-emerald-900/40">
-    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+<footer class="bg-[#062314] text-white py-10 sm:py-12 px-4 sm:px-6 text-center text-xs text-emerald-300/80 border-t border-emerald-900/40">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
         <div class="flex items-center gap-2">
-            <div class="h-7 w-7 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-white text-xs">LE</div>
+            <img src="assets/images/app_logo.png" alt="Logo" class="h-7 w-7 rounded-lg object-cover shadow">
             <span class="font-bold text-white">Livestock Express</span>
         </div>
         <p>&copy; 2026 Livestock Express. Developed for Alaminos City, Pangasinan. All rights reserved.</p>
     </div>
 </footer>
 
+<!-- Mobile Menu Toggle Script -->
+<script>
+    const btn = document.getElementById('menu-btn');
+    const menu = document.getElementById('mobile-menu');
+
+    btn.addEventListener('click', () => {
+        menu.classList.toggle('hidden');
+    });
+
+    menu.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+            menu.classList.add('hidden');
+        });
+    });
+</script>
 </body>
 </html>
