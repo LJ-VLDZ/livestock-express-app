@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livestock Express | Alaminos City Agri-Tech Solutions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; }
+    </style>
+</head>
+<body class="bg-[#F1F6F2] text-slate-800 antialiased">
+
+{{-- Navigation Bar --}}
+<header class="sticky top-0 z-50 bg-[#062314] text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="h-10 w-10 rounded-xl bg-[#134E27] flex items-center justify-center font-extrabold text-xl text-emerald-300">LE</div>
+            <div>
+                <h1 class="text-lg font-extrabold tracking-tight">Livestock Express</h1>
+                <p class="text-[10px] uppercase tracking-wider text-emerald-300">Alaminos City, Pangasinan</p>
+            </div>
+        </div>
+        <a href="#download" class="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition">Download App</a>
+    </div>
+</header>
+
+{{-- Hero Section --}}
+<section class="relative overflow-hidden bg-gradient-to-br from-[#062314] to-[#134E27] text-white py-20 px-6">
+    <div class="max-w-4xl mx-auto text-center space-y-6">
+            <span class="inline-flex items-center gap-2 rounded-full bg-emerald-900/60 border border-emerald-500/40 px-4 py-1.5 text-xs font-semibold text-emerald-300">
+                🌱 Official Municipal Biosecurity & Livestock Marketplace
+            </span>
+        <h2 class="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight">
+            Secure Livestock Trading & Live Tracking Across Alaminos City
+        </h2>
+        <p class="text-lg text-emerald-100 max-w-2xl mx-auto leading-relaxed">
+            Empowering farmers, buyers, and the Alaminos City Veterinary Office with real-time GPS delivery tracking, multi-angle inspection media uploads, and transparent trade verification.
+        </p>
+        <div id="download" class="pt-4 flex flex-col sm:flex-row justify-center gap-4">
+            {{-- Point this href to your uploaded release APK URL --}}
+            <a href="https://github.com/LJ-VLDZ/your-repo-name/releases/download/v1.0.0/app-release.apk" class="inline-flex items-center justify-center gap-3 rounded-2xl bg-white px-8 py-4 text-sm font-extrabold text-[#062314] shadow-xl hover:bg-emerald-50 transition">
+                <svg class="h-5 w-5 text-emerald-700" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                Download Android APK (.apk)
+            </a>
+        </div>
+        <p class="text-xs text-emerald-300/80">Compatible with Android 8.0 and above (Tested on TECNO handheld devices)</p>
+    </div>
+</section>
+
+{{-- FAQs Section --}}
+<section class="max-w-4xl mx-auto py-20 px-6">
+    <div class="text-center space-y-3 mb-16">
+        <p class="text-xs font-bold uppercase tracking-widest text-emerald-700">Got Questions?</p>
+        <h3 class="text-3xl font-extrabold text-slate-900">Frequently Asked Questions</h3>
+        <p class="text-sm text-slate-600">Everything you need to know about using Livestock Express.</p>
+    </div>
+
+    <div class="space-y-6">
+        <div class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+            <h4 class="font-extrabold text-slate-900 text-base mb-2">1. How do I install the APK on my mobile phone?</h4>
+            <p class="text-sm text-slate-600 leading-relaxed">Click the download button above to save the `.apk` file to your phone. Tap the downloaded file to install. If prompted by Android, allow installation from unknown sources for this browser or file manager.</p>
+        </div>
+
+        <div class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+            <h4 class="font-extrabold text-slate-900 text-base mb-2">2. What is the City Veterinary Online Inspection?</h4>
+            <p class="text-sm text-slate-600 leading-relaxed">Before a seller can dispatch a livestock order, they must upload multi-angle inspection photos and a real-time inspection video. The municipal vet reviews these files to ensure biosecurity compliance across all 39 barangays in Alaminos City.</p>
+        </div>
+
+        <div class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+            <h4 class="font-extrabold text-slate-900 text-base mb-2">3. How does the live GPS tracking work?</h4>
+            <p class="text-sm text-slate-600 leading-relaxed">Once the inspection is approved and the seller taps "Dispatch", the mobile app securely streams the seller's live GPS coordinates to Firestore. The admin panel at the municipal office renders these updates on a real-time radar map.</p>
+        </div>
+
+        <div class="rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+            <h4 class="font-extrabold text-slate-900 text-base mb-2">4. Who can use Livestock Express?</h4>
+            <p class="text-sm text-slate-600 leading-relaxed">The platform is built for verified local livestock farmers, registered buyers across Pangasinan, and administrators at the Alaminos City Veterinary Office.</p>
+        </div>
+    </div>
+</section>
+
+{{-- Footer --}}
+<footer class="bg-[#062314] text-white py-10 px-6 text-center text-xs text-emerald-300/80">
+    <p>&copy; 2026 Livestock Express. Developed for Alaminos City, Pangasinan. All rights reserved.</p>
+</footer>
+
+</body>
+</html>
