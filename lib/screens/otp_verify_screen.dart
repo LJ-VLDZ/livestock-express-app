@@ -96,7 +96,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
               e.code == 'invalid-credential') {
             _showMessage(
               'Unable to authenticate your account. '
-                  'Please check your registration credentials.',
+                  'Please check your email first.',
             );
           } else {
             _showMessage(
