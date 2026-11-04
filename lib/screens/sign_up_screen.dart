@@ -144,11 +144,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('https://decency-entire-enviably.ngrok-free.dev/api/register/pending'),
+        Uri.parse('https://adminlivestockexpress.site/api/register/pending'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
         },
         body: jsonEncode({
           'name': _name.text.trim(),

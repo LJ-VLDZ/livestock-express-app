@@ -56,7 +56,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> with WidgetsBindingOb
       String? idToken = await firebaseUser.getIdToken();
 
       // Replace with your actual Laravel backend API endpoint / domain
-      final url = Uri.parse("https://your-laravel-backend-domain.com/api/user/verification-status");
+      final url = Uri.parse("https://adminlivestockexpress.site/api/user/verification-status");
 
       final response = await http.get(
         url,
