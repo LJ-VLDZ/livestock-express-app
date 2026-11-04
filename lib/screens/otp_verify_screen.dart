@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
-// Import your main dashboard or home screen route here
 import 'login_screen.dart';
 
 class OtpVerifyScreen extends StatefulWidget {
@@ -21,15 +20,12 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> with WidgetsBindingOb
   @override
   void initState() {
     super.initState();
-    // Register lifecycle observer to detect when app resumes from background
     WidgetsBinding.instance.addObserver(this);
-    // Initial server check on load
     _checkServerVerificationStatus();
   }
 
   @override
   void dispose() {
-    // Remove lifecycle observer
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -37,55 +33,83 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> with WidgetsBindingOb
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // Triggered whenever the app comes back to the foreground (e.g. from Gmail/Email app)
     if (state == AppLifecycleState.resumed) {
       _checkServerVerificationStatus();
     }
   }
 
-  /// Calls the Laravel backend to check true verification status
   Future<void> _checkServerVerificationStatus() async {
     if (_isCheckingStatus) return;
     setState(() => _isCheckingStatus = true);
 
     try {
       final User? firebaseUser = FirebaseAuth.instance.currentUser;
-      if (firebaseUser == null) return;
+      if (firebaseUser == null) {
+        _showSnackBar("No active user session found. Please log in again.");
+        return;
+      }
 
-      // Get Firebase ID token to authenticate the API request against Laravel backend
-      String? idToken = await firebaseUser.getIdToken();
-
-      // Replace with your actual Laravel backend API endpoint / domain
+      // Refresh Firebase token to ensure validity
+      String? idToken = await firebaseUser.getIdToken(true);
       final url = Uri.parse("https://adminlivestockexpress.site/api/user/verification-status");
 
       final response = await http.get(
         url,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken', // Or your session/sanctum token
+          'Authorization': 'Bearer $idToken',
         },
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final bool isVerified = data['is_verified'] ?? false; // Adjust based on your backend json key
+        final bool isVerified = data['is_verified'] ?? false;
 
-        if (isVerified && mounted) {
-          // Strictly redirect to home/dashboard based on server truth, clearing navigation stack
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (route) => false,
+        if (isVerified) {
+          if (!mounted) return;
+
+          // Show Congratulation Dialog before navigating
+          await showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: const Text("Success! 🎉"),
+              content: const Text("Your email has been successfully verified. Welcome to Livestock Express!"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                          (route) => false,
+                    );
+                  },
+                  child: const Text("Continue to Login"),
+                ),
+              ],
+            ),
           );
+        } else {
+          _showSnackBar("Email not yet verified. Please check your inbox.");
         }
+      } else {
+        _showSnackBar("Server check failed (${response.statusCode}). Please try again.");
       }
     } catch (e) {
       debugPrint("Verification status check error: $e");
+      _showSnackBar("Connection error. Check your internet.");
     } finally {
       if (mounted) {
         setState(() => _isCheckingStatus = false);
       }
     }
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 
   @override
@@ -113,7 +137,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> with WidgetsBindingOb
             ),
             const SizedBox(height: 12),
             Text(
-              "We've sent a verification link or OTP to your email. Please check your inbox and verify your account to proceed.",
+              "We've sent a verification link to your email. Please check your inbox and verify your account, then click below.",
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.4),
             ),
