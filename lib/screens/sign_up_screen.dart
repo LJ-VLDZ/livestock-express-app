@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'otp_verify_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -166,10 +167,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const OtpVerifyScreen(),
+            builder: (context) => OtpVerifyScreen(
+              email: _email.text.trim(),
+              password: _password.text,
+            ),
           ),
         );
-      } else {
+      }else {
         final data = jsonDecode(response.body);
         _message(data['message'] ?? 'Registration failed.');
       }

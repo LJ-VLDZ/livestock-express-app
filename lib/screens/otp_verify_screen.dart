@@ -1,14 +1,20 @@
+
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
 
 import 'login_screen.dart';
 
 class OtpVerifyScreen extends StatefulWidget {
-  const OtpVerifyScreen({super.key});
+  final String email;
+  final String password;
+
+  const OtpVerifyScreen({
+    super.key,
+    required this.email,
+    required this.password,
+  });
 
   @override
   State<OtpVerifyScreen> createState() => _OtpVerifyScreenState();
@@ -23,16 +29,12 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
   final Color _deepForestGreen = const Color(0xFF0A3622);
   final Color _vibrantGreen = const Color(0xFF1B5E20);
 
-  static const String verificationUrl =
-      'https://adminlivestockexpress.site/api/user/verification-status';
-
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addObserver(this);
 
-    // Automatically check verification when screen opens.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkVerificationStatus();
     });
@@ -44,7 +46,6 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
     super.dispose();
   }
 
-  // Detect when the user returns to the application.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
@@ -54,7 +55,6 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
     }
   }
 
-  // MAIN VERIFICATION CHECK
   Future<void> _checkVerificationStatus({
     bool showMessage = false,
   }) async {
@@ -63,163 +63,115 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
       return;
     }
 
-    setState(() {
-      _isCheckingStatus = true;
-    });
-
-    bool isVerified = false;
+    setState(() => _isCheckingStatus = true);
 
     try {
-      // STEP 1: Check Firebase Authentication first.
-      User? firebaseUser = FirebaseAuth.instance.currentUser;
+      FirebaseAuth auth = FirebaseAuth.instance;
 
-      if (firebaseUser == null) {
-        if (showMessage) {
-          _showSnackBar(
-            'No active user session found. Please log in again.',
+      User? user = auth.currentUser;
+
+      // STEP 1: Authenticate if no Firebase session exists.
+      // Laravel creates the Firebase account only after
+      // the user clicks the verification link.
+
+      if (user == null) {
+        try {
+          final credential =
+          await auth.signInWithEmailAndPassword(
+            email: widget.email,
+            password: widget.password,
           );
+
+          user = credential.user;
+        } on FirebaseAuthException catch (e) {
+
+          debugPrint('Firebase sign-in: ${e.code}');
+
+          if (e.code == 'user-not-found') {
+            _showMessage(
+              'Please verify your email first. '
+                  'The verification link may not have been completed.',
+            );
+          } else if (e.code == 'wrong-password' ||
+              e.code == 'invalid-credential') {
+            _showMessage(
+              'Unable to authenticate your account. '
+                  'Please check your registration credentials.',
+            );
+          } else {
+            _showMessage(
+              'Unable to connect to your account. Please try again.',
+            );
+          }
+
+          return;
         }
+      }
+
+      if (user == null) {
+        _showMessage('Unable to retrieve your Firebase account.');
         return;
       }
 
-      try {
-        // IMPORTANT: Reload the Firebase user.
-        // This retrieves the latest email verification status.
-        await firebaseUser.reload();
+      // STEP 2: Refresh Firebase account information.
+      await user.reload();
 
-        // Get the refreshed Firebase user.
-        firebaseUser = FirebaseAuth.instance.currentUser;
+      user = auth.currentUser;
 
-        if (firebaseUser != null) {
-          debugPrint(
-            'Firebase email: ${firebaseUser.email}',
-          );
-
-          debugPrint(
-            'Firebase email verified: ${firebaseUser.emailVerified}',
-          );
-
-          isVerified = firebaseUser.emailVerified;
-        }
-      } catch (firebaseError) {
-        debugPrint(
-          'Firebase verification refresh error: $firebaseError',
-        );
+      if (user == null) {
+        _showMessage('Unable to refresh your account.');
+        return;
       }
 
-      // STEP 2: Check Laravel only if Firebase is not verified.
-      // This supports systems that also maintain a verification
-      // status in the Laravel database.
-      if (!isVerified) {
-        isVerified = await _checkLaravelVerificationStatus();
-      }
+      debugPrint('Email: ${user.email}');
+      debugPrint('Email verified: ${user.emailVerified}');
 
-      // STEP 3: If either trusted source confirms verification,
-      // show the congratulations dialog.
-      if (isVerified) {
+      // STEP 3: Check the actual Firebase email verification status.
+      if (user.emailVerified) {
+
         if (!mounted || _hasShownSuccess) return;
 
         _hasShownSuccess = true;
 
         await _showSuccessDialog();
-      } else {
-        debugPrint('Email is still not verified.');
 
-        if (showMessage && mounted) {
-          _showSnackBar(
-            'Email not yet verified. Please check your inbox.',
+      } else {
+
+        if (showMessage) {
+          _showMessage(
+            'Your email is not yet verified. '
+                'Please click the verification link in your inbox.',
           );
         }
       }
 
     } catch (e) {
-      debugPrint('Verification check error: $e');
+
+      debugPrint('Verification error: $e');
 
       if (showMessage && mounted) {
-        _showSnackBar(
+        _showMessage(
           'Unable to check verification. Please try again.',
         );
       }
 
     } finally {
+
       if (mounted) {
-        setState(() {
-          _isCheckingStatus = false;
-        });
+        setState(() => _isCheckingStatus = false);
       }
     }
   }
 
-  // LARAVEL VERIFICATION CHECK
-  Future<bool> _checkLaravelVerificationStatus() async {
-    try {
-      final firebaseUser = FirebaseAuth.instance.currentUser;
-
-      if (firebaseUser == null) {
-        return false;
-      }
-
-      // Get a fresh Firebase authentication token.
-      final String? idToken = await firebaseUser.getIdToken(true);
-
-      if (idToken == null || idToken.isEmpty) {
-        debugPrint('Unable to retrieve Firebase ID token.');
-        return false;
-      }
-
-      final response = await http.get(
-        Uri.parse(verificationUrl),
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-      ).timeout(const Duration(seconds: 15));
-
-      debugPrint(
-        'Laravel verification response: ${response.statusCode}',
-      );
-
-      debugPrint(
-        'Laravel response body: ${response.body}',
-      );
-
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-
-        if (decoded is Map<String, dynamic>) {
-          // Supports both direct and nested Laravel responses.
-          final dynamic verificationValue =
-              decoded['is_verified'] ??
-                  (decoded['data'] is Map
-                      ? decoded['data']['is_verified']
-                      : null);
-
-          if (verificationValue == true ||
-              verificationValue == 1 ||
-              verificationValue == '1' ||
-              verificationValue == 'true') {
-            return true;
-          }
-        }
-      }
-
-      return false;
-
-    } catch (e) {
-      debugPrint('Laravel verification API error: $e');
-      return false;
-    }
-  }
-
-  // SUCCESS DIALOG
   Future<void> _showSuccessDialog() async {
+
     if (!mounted) return;
 
-    final bool? shouldContinue = await showDialog<bool>(
+    final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
+
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -259,9 +211,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _vibrantGreen,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 14,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -285,9 +235,8 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
       },
     );
 
-    if (shouldContinue == true && mounted) {
-      // Sign out the verified account before returning to login.
-      // The user can authenticate again using their credentials.
+    if (result == true && mounted) {
+
       await FirebaseAuth.instance.signOut();
 
       if (!mounted) return;
@@ -302,8 +251,8 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
     }
   }
 
-  // SNACKBAR
-  void _showSnackBar(String message) {
+  void _showMessage(String message) {
+
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -316,15 +265,14 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FBF8),
 
       appBar: AppBar(
         title: const Text(
           'Email Verification',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: _deepForestGreen,
         foregroundColor: Colors.white,
@@ -362,7 +310,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
               const SizedBox(height: 15),
 
               Text(
-                'We have sent a verification link to your email address. '
+                'We have sent a verification link to ${widget.email}. '
                     'Please open your inbox, click the verification link, '
                     'and return to this application.',
                 textAlign: TextAlign.center,
@@ -382,7 +330,6 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _vibrantGreen,
                     foregroundColor: Colors.white,
-
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -405,7 +352,6 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
                       strokeWidth: 2,
                     ),
                   )
-
                       : const Text(
                     'I Have Verified — Check Status',
                     style: TextStyle(
