@@ -246,7 +246,8 @@ class _AddListingScreenState extends State<AddListingScreen> with SingleTickerPr
         'user_id': user.uid,
         'target_user_id': livestockRef.id,
         'action': 'Listed new livestock: $livestockName (Category: $category, Type: $_selectedSaleType)',
-        'timestamp': DateTime.now().toIso8601String(),
+        'details': 'The user submitted a new livestock listing for administrator review.',
+        'timestamp': FieldValue.serverTimestamp(),
       });
 
       await batch.commit();

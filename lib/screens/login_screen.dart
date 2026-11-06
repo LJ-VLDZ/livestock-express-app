@@ -137,6 +137,7 @@ class _LoginScreenState extends State<LoginScreen>
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_email', user.email ?? '');
 
+      // --- RECORD LOGIN ACTIVITY LOG ---
       try {
         final userSnapshot = await FirebaseFirestore.instance
             .collection('users')
@@ -147,7 +148,12 @@ class _LoginScreenState extends State<LoginScreen>
 
         final firstName = (userData['firstName'] ?? '').toString();
         final lastName = (userData['lastName'] ?? '').toString();
-        final fullName = '$firstName $lastName'.trim();
+
+        final fullName = ('$firstName $lastName').trim().isNotEmpty
+            ? ('$firstName $lastName').trim()
+            : (userData['name'] ??
+            userData['fullName'] ??
+            'Registered User').toString();
 
         await FirebaseFirestore.instance
             .collection('activity_logs')
@@ -156,13 +162,16 @@ class _LoginScreenState extends State<LoginScreen>
           'user_email': user.email ?? '',
           'user_name': fullName,
           'action': 'User logged in',
-          'details': 'User successfully logged in to Livestock Express',
+          'details': 'User successfully logged in to Livestock Express.',
           'actorType': 'user',
           'timestamp': FieldValue.serverTimestamp(),
         });
+
+        debugPrint('Successfully recorded login activity for user: ${user.uid}');
       } catch (logError) {
-        debugPrint('Unable to save login activity: $logError');
+        debugPrint('Unable to save login activity to Firestore: $logError');
       }
+      // -------------------------------
 
       if (!mounted) return;
 
@@ -172,7 +181,6 @@ class _LoginScreenState extends State<LoginScreen>
             (route) => false,
       );
     } on FirebaseAuthException catch (e) {
-      // Specific error handling for email / password issues
       String errorMessage = 'Authentication failed. Please verify your credentials.';
 
       if (e.code == 'user-not-found' || e.code == 'invalid-email') {
@@ -251,10 +259,10 @@ class _LoginScreenState extends State<LoginScreen>
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                             ),
                           ),
                           child: const Icon(
@@ -280,7 +288,7 @@ class _LoginScreenState extends State<LoginScreen>
                       'Secure digital agricultural marketplace portal',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white.withOpacity(0.75),
+                        color: Colors.white.withValues(alpha: 0.75),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -302,7 +310,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.25),
+                          color: Colors.black.withValues(alpha: 0.25),
                           blurRadius: 25,
                           offset: const Offset(0, -8),
                         ),
@@ -491,7 +499,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   ),
                                   elevation: 6,
                                   shadowColor: _vibrantGreen
-                                      .withOpacity(0.4),
+                                      .withValues(alpha: 0.4),
                                 ),
                                 onPressed: _handleLogin,
                                 child: const Text(

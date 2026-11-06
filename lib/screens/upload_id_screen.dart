@@ -196,6 +196,38 @@ class _UploadIDScreenState extends State<UploadIDScreen> with SingleTickerProvid
       await FirebaseFirestore.instance.collection('users').doc(uid).set(updateData, SetOptions(merge: true));
       await currentUser.updatePhotoURL(faceUrl);
 
+      // Record that the user submitted identity verification for admin review.
+      // This is a submission event, not an approval event.
+      try {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .get();
+        final userData = userDoc.data() ?? {};
+        final firstName = (userData['firstName'] ?? '').toString().trim();
+        final lastName = (userData['lastName'] ?? '').toString().trim();
+        final profileName = ('$firstName $lastName').trim();
+        final userName = profileName.isNotEmpty
+            ? profileName
+            : (userData['name'] ??
+            userData['fullName'] ??
+            currentUser.displayName ??
+            'Registered User').toString();
+
+        await FirebaseFirestore.instance.collection('activity_logs').add({
+          'actorType': 'user',
+          'user_id': uid,
+          'user_email': currentUser.email ?? '',
+          'user_name': userName,
+          'target_user_id': uid,
+          'action': 'Submitted ID and facial verification',
+          'details': 'User submitted ${widget.idType} ID front/back images and facial verification for admin review.',
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+      } catch (logError) {
+        debugPrint('Unable to save ID verification activity: $logError');
+      }
+
       if (mounted) {
         Navigator.pushReplacement(
           context,

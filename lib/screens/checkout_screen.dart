@@ -152,14 +152,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
       final rawPrice = widget.listingData['price'];
       final double price = rawPrice is int ? rawPrice.toDouble() : (rawPrice ?? 0.0);
 
-      // Calculate dynamic distance-based delivery fee
       final String sellerBarangay = widget.listingData['sellerBarangay'] ?? 'Poblacion';
       final String buyerBarangay = _deliveryDetails['barangay'];
       final double deliveryFee = DistanceHelper.calculateTransportFee(sellerBarangay, buyerBarangay);
 
       final double totalPrice = price + deliveryFee;
-
       final String sellerId = widget.listingData['seller_id'] ?? widget.listingData['sellerId'] ?? '';
+      final String title = widget.listingData['livestock_name'] ?? widget.listingData['title'] ?? 'Livestock Item';
 
       String buyerName = _deliveryDetails['name'];
       if (buyerName.isEmpty) buyerName = user?.email ?? 'Buyer';
@@ -174,7 +173,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
 
       DocumentReference orderRef = await FirebaseFirestore.instance.collection('orders').add({
         'listingId': widget.listingId,
-        'livestockName': widget.listingData['livestock_name'] ?? widget.listingData['title'] ?? 'Livestock Item',
+        'livestockName': title,
         'itemPrice': price,
         'deliveryFee': deliveryFee,
         'totalAmount': totalPrice,
@@ -200,6 +199,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
         'isAvailable': false,
         'status': 'Ordered',
       });
+
+      // Record the buyer's order activity separately.
+      // A logging failure should not make a successfully-created order appear to fail.
+      try {
+        await FirebaseFirestore.instance.collection('activity_logs').add({
+          'actorType': 'user',
+          'user_name': buyerName,
+          'user_email': user?.email ?? '',
+          'user_id': user!.uid,
+          'target_user_id': orderRef.id,
+          'action': 'Buyer placed an order: $title',
+          'details': 'Order ID: ${orderRef.id}; Seller: $sellerName; Total: ₱${FormatHelper.formatCurrency(totalPrice)}; Payment method: $_paymentMethod',
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+      } catch (logError) {
+        debugPrint('Unable to save buyer order activity: $logError');
+      }
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -236,7 +252,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
     final double price = rawPrice is int ? rawPrice.toDouble() : (rawPrice ?? 0.0);
     final String title = widget.listingData['livestock_name'] ?? widget.listingData['title'] ?? 'Livestock';
 
-    // Calculate transport fee dynamically
     final String sellerBarangay = widget.listingData['sellerBarangay'] ?? 'Poblacion';
     final String buyerBarangay = _deliveryDetails['barangay'];
     final double deliveryFee = DistanceHelper.calculateTransportFee(sellerBarangay, buyerBarangay);
@@ -260,7 +275,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Address Card
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
@@ -322,8 +336,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                 ),
               ),
               const SizedBox(height: 18),
-
-              // Parcel Summary Card
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
@@ -375,8 +387,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                 ),
               ),
               const SizedBox(height: 18),
-
-              // Payment Method Card
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
@@ -413,8 +423,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> with SingleTickerProvid
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Total & Submit Button
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(

@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'login_screen.dart';
 
@@ -131,6 +132,11 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
 
         if (!mounted || _hasShownSuccess) return;
 
+        // Record registration only after the email has been verified.
+        // A fixed document ID prevents duplicate registration logs if this
+        // verification screen is opened or checked more than once.
+        await _recordRegistrationActivity(user);
+
         _hasShownSuccess = true;
 
         await _showSuccessDialog();
@@ -160,6 +166,58 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen>
       if (mounted) {
         setState(() => _isCheckingStatus = false);
       }
+    }
+  }
+
+
+  Future<void> _recordRegistrationActivity(User user) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+
+      // Read the profile created by the Laravel registration endpoint,
+      // if it is already available.
+      String userName = user.displayName ?? 'Registered User';
+
+      try {
+        final userDoc = await firestore
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        final userData = userDoc.data() ?? {};
+        final firstName = (userData['firstName'] ?? '').toString().trim();
+        final lastName = (userData['lastName'] ?? '').toString().trim();
+        final fullName = ('$firstName $lastName').trim();
+
+        if (fullName.isNotEmpty) {
+          userName = fullName;
+        } else if ((userData['name'] ?? '').toString().trim().isNotEmpty) {
+          userName = userData['name'].toString().trim();
+        } else if ((userData['fullName'] ?? '').toString().trim().isNotEmpty) {
+          userName = userData['fullName'].toString().trim();
+        }
+      } catch (profileError) {
+        debugPrint('Could not read profile for registration log: $profileError');
+      }
+
+      await firestore
+          .collection('activity_logs')
+          .doc('registration_${user.uid}')
+          .set({
+        'actorType': 'user',
+        'user_id': user.uid,
+        'user_email': user.email ?? widget.email,
+        'user_name': userName,
+        'target_user_id': user.uid,
+        'action': 'New user registered',
+        'details': 'User completed email verification and successfully registered for Livestock Express.',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      debugPrint('Registration activity recorded for ${user.uid}');
+    } catch (logError) {
+      // Activity logging must not prevent a verified user from continuing.
+      debugPrint('Unable to save registration activity: $logError');
     }
   }
 
