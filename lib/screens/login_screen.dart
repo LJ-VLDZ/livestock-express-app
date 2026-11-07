@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,13 +14,17 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _identifierController =
-  TextEditingController();
-  final TextEditingController _passwordController =
-  TextEditingController();
+  final TextEditingController _identifierController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _captchaController = TextEditingController();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
+
+  // --- CAPTCHA STATE VARIABLES ---
+  String _captchaCode = '';
+  bool _isCaptchaValid = false;
+  // -------------------------------
 
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
@@ -32,6 +37,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
+    _generateCaptcha();
 
     _animController = AnimationController(
       vsync: this,
@@ -61,11 +67,37 @@ class _LoginScreenState extends State<LoginScreen>
     _animController.dispose();
     _identifierController.dispose();
     _passwordController.dispose();
+    _captchaController.dispose();
     super.dispose();
+  }
+
+  // --- CAPTCHA GENERATOR METHOD ---
+  void _generateCaptcha() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excludes visually ambiguous chars (0, O, I, 1)
+    final rnd = Random();
+    final code = String.fromCharCodes(
+      Iterable.generate(4, (_) => chars.codeUnitAt(rnd.nextInt(chars.length))),
+    );
+    setState(() {
+      _captchaCode = code;
+      _captchaController.clear();
+      _isCaptchaValid = false;
+    });
+  }
+
+  // --- CAPTCHA VALIDATION METHOD ---
+  void _validateCaptcha(String value) {
+    setState(() {
+      _isCaptchaValid = value.trim().toUpperCase() == _captchaCode;
+    });
   }
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_isCaptchaValid) {
+      _showErrorSnackBar('Please complete the correct CAPTCHA verification.');
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -93,6 +125,7 @@ class _LoginScreenState extends State<LoginScreen>
         if (querySnapshot.docs.isEmpty) {
           _showErrorSnackBar('No account found with this mobile number.');
           setState(() => _isLoading = false);
+          _generateCaptcha(); // Reset captcha on failure
           return;
         }
 
@@ -102,6 +135,7 @@ class _LoginScreenState extends State<LoginScreen>
         if (emailToAuth.isEmpty) {
           _showErrorSnackBar('This account has no registered email address.');
           setState(() => _isLoading = false);
+          _generateCaptcha();
           return;
         }
       }
@@ -109,8 +143,7 @@ class _LoginScreenState extends State<LoginScreen>
       final String finalEmail = emailToAuth.toLowerCase().trim();
       final String finalPassword = _passwordController.text.trim();
 
-      final credential =
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: finalEmail,
         password: finalPassword,
       );
@@ -120,6 +153,7 @@ class _LoginScreenState extends State<LoginScreen>
       if (user == null) {
         _showErrorSnackBar('Unable to retrieve your account. Please try again.');
         setState(() => _isLoading = false);
+        _generateCaptcha();
         return;
       }
 
@@ -130,6 +164,8 @@ class _LoginScreenState extends State<LoginScreen>
       if (refreshedUser != null && !refreshedUser.emailVerified) {
         await FirebaseAuth.instance.signOut();
         _showErrorSnackBar('Please verify your email address via the link sent to your inbox before logging in.');
+        setState(() => _isLoading = false);
+        _generateCaptcha();
         return;
       }
       // -------------------------------
@@ -145,19 +181,14 @@ class _LoginScreenState extends State<LoginScreen>
             .get();
 
         final userData = userSnapshot.data() ?? {};
-
         final firstName = (userData['firstName'] ?? '').toString();
         final lastName = (userData['lastName'] ?? '').toString();
 
         final fullName = ('$firstName $lastName').trim().isNotEmpty
             ? ('$firstName $lastName').trim()
-            : (userData['name'] ??
-            userData['fullName'] ??
-            'Registered User').toString();
+            : (userData['name'] ?? userData['fullName'] ?? 'Registered User').toString();
 
-        await FirebaseFirestore.instance
-            .collection('activity_logs')
-            .add({
+        await FirebaseFirestore.instance.collection('activity_logs').add({
           'user_id': user.uid,
           'user_email': user.email ?? '',
           'user_name': fullName,
@@ -166,8 +197,6 @@ class _LoginScreenState extends State<LoginScreen>
           'actorType': 'user',
           'timestamp': FieldValue.serverTimestamp(),
         });
-
-        debugPrint('Successfully recorded login activity for user: ${user.uid}');
       } catch (logError) {
         debugPrint('Unable to save login activity to Firestore: $logError');
       }
@@ -192,16 +221,15 @@ class _LoginScreenState extends State<LoginScreen>
       }
 
       _showErrorSnackBar(errorMessage);
+      _generateCaptcha(); // Reset CAPTCHA on error
     } on FirebaseException catch (e) {
       debugPrint('Firebase login error: ${e.code} - ${e.message}');
-      _showErrorSnackBar(
-        'A Firebase error occurred. Please check your connection and try again.',
-      );
+      _showErrorSnackBar('A Firebase error occurred. Please check your connection and try again.');
+      _generateCaptcha();
     } catch (e) {
       debugPrint('Unexpected login error: $e');
-      _showErrorSnackBar(
-        'An unexpected error occurred. Please try again.',
-      );
+      _showErrorSnackBar('An unexpected error occurred. Please try again.');
+      _generateCaptcha();
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -479,7 +507,130 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
+
+                            // --- CAPTCHA UI WIDGET SECTION ---
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade50.withValues(alpha: 0.5),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: Colors.green.shade200),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Security Verification',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w800,
+                                          color: _deepForestGreen,
+                                        ),
+                                      ),
+                                      InkWell(
+                                        onTap: _generateCaptcha,
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.refresh_rounded, size: 14, color: _vibrantGreen),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Get New Code',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: _vibrantGreen,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      // CAPTCHA Code Display Box
+                                      Expanded(
+                                        flex: 2,
+                                        child: Container(
+                                          height: 48,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: Colors.green.shade300),
+                                          ),
+                                          child: Text(
+                                            _captchaCode,
+                                            style: TextStyle(
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.w900,
+                                              letterSpacing: 6.0,
+                                              color: _vibrantGreen,
+                                              decoration: TextDecoration.lineThrough,
+                                              decorationColor: Colors.green.shade200,
+                                              decorationThickness: 2,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      // CAPTCHA Input Field
+                                      Expanded(
+                                        flex: 3,
+                                        child: SizedBox(
+                                          height: 48,
+                                          child: TextFormField(
+                                            controller: _captchaController,
+                                            onChanged: _validateCaptcha,
+                                            textCapitalization: TextCapitalization.characters,
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 2.0,
+                                            ),
+                                            decoration: InputDecoration(
+                                              hintText: 'Enter code',
+                                              hintStyle: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.normal,
+                                                letterSpacing: 0,
+                                                color: Colors.grey.shade400,
+                                              ),
+                                              suffixIcon: _isCaptchaValid
+                                                  ? const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20)
+                                                  : null,
+                                              contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                                borderSide: BorderSide(color: Colors.green.shade200),
+                                              ),
+                                              enabledBorder: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                                borderSide: BorderSide(color: Colors.green.shade200),
+                                              ),
+                                              focusedBorder: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                                borderSide: BorderSide(color: _vibrantGreen, width: 2),
+                                              ),
+                                              filled: true,
+                                              fillColor: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // ------------------------------------
+
+                            const SizedBox(height: 24),
                             SizedBox(
                               height: 56,
                               child: _isLoading
@@ -493,15 +644,16 @@ class _LoginScreenState extends State<LoginScreen>
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: _vibrantGreen,
                                   foregroundColor: Colors.white,
+                                  disabledBackgroundColor: Colors.grey.shade300,
+                                  disabledForegroundColor: Colors.grey.shade600,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                    BorderRadius.circular(18),
+                                    borderRadius: BorderRadius.circular(18),
                                   ),
-                                  elevation: 6,
-                                  shadowColor: _vibrantGreen
-                                      .withValues(alpha: 0.4),
+                                  elevation: _isCaptchaValid ? 6 : 0,
+                                  shadowColor: _vibrantGreen.withValues(alpha: 0.4),
                                 ),
-                                onPressed: _handleLogin,
+                                // Button is disabled (null) if CAPTCHA is invalid
+                                onPressed: _isCaptchaValid ? _handleLogin : null,
                                 child: const Text(
                                   'Log In',
                                   style: TextStyle(

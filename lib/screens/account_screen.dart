@@ -332,9 +332,89 @@ class _AccountScreenState extends State<AccountScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     if (user == null) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF8FBF8),
-        body: Center(child: Text("No user logged in.", style: TextStyle(fontWeight: FontWeight.w500))),
+      return Scaffold(
+        backgroundColor: const Color(0xFFF8FBF8),
+        body: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Account",
+                    style: TextStyle(color: _deepForestGreen, fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                  ),
+                  const SizedBox(height: 4),
+                  Text("Manage your profile and trading settings", style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 40),
+                  Expanded(
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.green.shade100, width: 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 15,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: _softGreenTint,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(Icons.person_off_rounded, size: 48, color: _vibrantGreen),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              "No User Logged In",
+                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: _deepForestGreen),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "Log in or register to view your profile, track purchases, and manage your livestock listings in Alaminos City.",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.4),
+                            ),
+                            const SizedBox(height: 24),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _vibrantGreen,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                ),
+                                onPressed: () {
+                                  Navigator.pushNamed(context, '/login');
+                                },
+                                child: const Text("Log In / Register", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       );
     }
 

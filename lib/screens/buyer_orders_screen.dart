@@ -319,6 +319,7 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> with SingleTicker
                       final data = doc.data() as Map<String, dynamic>;
                       final String status = data['orderStatus'] ?? 'Pending Verification & Dispatch';
                       final bool isRated = data['isRated'] ?? false;
+                      final String sellerId = data['sellerId'] ?? '';
 
                       // Check if inspection tag or media is present
                       final String? inspectionVideoUrl = data['inspectionVideoUrl'] ?? data['videoUrl'];
@@ -437,23 +438,70 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> with SingleTicker
                                 ),
                               ),
                               const SizedBox(height: 24),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 50,
-                                child: ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.grey.shade50,
-                                    foregroundColor: _deepForestGreen,
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      side: BorderSide(color: Colors.grey.shade200),
+
+                              // ACTION BUTTONS (Track Order, Confirm Received, Rate Seller)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: SizedBox(
+                                      height: 46,
+                                      child: OutlinedButton.icon(
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: _deepForestGreen,
+                                          side: BorderSide(color: Colors.grey.shade300),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                        ),
+                                        icon: const Icon(Icons.radar_rounded, size: 18),
+                                        label: const Text("Track", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OrderTrackingScreen(orderId: doc.id))),
+                                      ),
                                     ),
                                   ),
-                                  icon: const Icon(Icons.radar_rounded, size: 20),
-                                  label: const Text("Track Order Status", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OrderTrackingScreen(orderId: doc.id))),
-                                ),
+
+                                  // Show Confirm Received button if order is in transit / shipped / delivered
+                                  if (status.toLowerCase().contains('dispatched') || status.toLowerCase().contains('delivered') || status.toLowerCase().contains('shipped')) ...[
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 46,
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: _vibrantGreen,
+                                            foregroundColor: Colors.white,
+                                            elevation: 0,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                          ),
+                                          onPressed: () => _confirmReceived(context, doc.id),
+                                          child: const Text("Received", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+
+                                  // Show Rate Seller button if order is Completed
+                                  if (status.toLowerCase().contains('completed')) ...[
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 46,
+                                        child: ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: isRated ? Colors.grey.shade200 : Colors.amber.shade700,
+                                            foregroundColor: isRated ? Colors.grey.shade700 : Colors.white,
+                                            elevation: 0,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                          ),
+                                          icon: Icon(isRated ? Icons.check_circle_rounded : Icons.star_rounded, size: 18),
+                                          label: Text(
+                                            isRated ? "Rated" : "Rate Seller",
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                          ),
+                                          onPressed: isRated ? null : () => _showRatingDialog(context, sellerId, doc.id),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ],
                           ),
